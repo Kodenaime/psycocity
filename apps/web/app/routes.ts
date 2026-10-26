@@ -13,6 +13,7 @@ export default [layout("components/site-layout.tsx", [
   route("admin/mfa", "routes/admin-mfa.tsx"),
   ...["admin", "admin/staff", "admin/audit", "admin/applications", "admin/applications/:id", "admin/events"].map(path => route(path, "routes/admin.tsx", { id: path.replaceAll("/", "-") })),
   route("apply", "routes/apply.tsx"),
+  route("applicant/payment-return", "routes/payment-return.tsx"),
   route("applicant/dashboard", "routes/applicant-dashboard.tsx"),
   route("applicant/application/:id", "routes/application.tsx"),
   ...["register", "login", "forgot-password", "reset-password", "verify-email", "resend-verification"].map((path) => route(`applicant/${path}`, "routes/auth.tsx", { id: `auth-${path}` })),

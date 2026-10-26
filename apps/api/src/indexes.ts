@@ -1,3 +1,5 @@
+import { createPaymentModel } from "./payments/models.js";
+import { createOfferModel } from "./offers/models.js";
 import { createEventModels } from "./events/models.js";
 import { createAdminModels } from "./admin/models.js";
 import { createGuardianModel } from "./guardian/models.js";
@@ -13,6 +15,8 @@ const config = readConfig(process.env);
 const database = createDatabase(config.mongoUri);
 try {
   await database.connect();
+  await createPaymentModel(database.connection).createIndexes();
+  await createOfferModel(database.connection).createIndexes();
   await ensureIdentityIndexes(createIdentityModels(database.connection));
   await createOutboxModel(database.connection).createIndexes();
   await createRateLimitModel(database.connection).createIndexes();

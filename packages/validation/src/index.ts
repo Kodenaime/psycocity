@@ -133,3 +133,13 @@ export const admissionEventSchema = z.object({...eventFields, id: z.string(), tr
 export const eventPageSchema = z.object({items: z.array(admissionEventSchema), nextCursor: z.string().nullable()});
 export const eventInvitationSchema = z.object({id: z.string(), applicationId: z.string(), event: admissionEventSchema, startsAt: z.iso.datetime(), endsAt: z.iso.datetime(), version: z.number().int(), status: z.enum(["active", "cancelled"]), rsvp: z.enum(["pending", "confirmed", "declined"]), attendance: z.enum(["unrecorded", "present", "absent", "late", "excused"]), outcome: z.string()});
 export const invitationPageSchema = z.object({items: z.array(eventInvitationSchema), nextCursor: z.string().nullable()});
+
+export const admissionTermsVersion = "admission-offer-2026-10-v1";
+export const admissionTermsText = "Acceptance is conditional on verified payment of the stated one-time track fee before the offer deadline. Academy: NGN 50,000 total tuition/assessment fee. Established-model track: NGN 30,000 total assessment/onboarding fee. No additional application fee is due. Payment does not guarantee modelling work or earnings. Membership activation follows payment verification and a separate invitation. Consult the published application, privacy and refund policies before payment.";
+export const admissionDecisionSchema = z.object({version: z.number().int().nonnegative(), decision: z.enum(["accept", "reject", "waitlist", "renew"]), reason: z.string().trim().min(10).max(2000), deadlineDays: z.number().int().min(1).max(90).default(14)}).strict();
+export const admissionOfferSchema = z.object({id: z.string(), applicationId: z.string(), track: trackSchema, amountKobo: z.number().int().positive(), currency: z.literal("NGN"), termsVersion: z.string(), termsText: z.string(), expiresAt: z.iso.datetime(), issuedAt: z.iso.datetime(), revision: z.number().int(), status: z.enum(["issued", "expired", "replaced", "paid"]), active: z.boolean(), eligibleForCheckout: z.boolean()});
+export const applicationOffersSchema = z.object({items: z.array(admissionOfferSchema), defaultDeadlineDays: z.literal(14)});
+
+export const checkoutRequestSchema = z.object({termsVersion: z.string().min(1).max(100), acceptsTerms: z.literal(true)}).strict();
+export const checkoutCapabilitiesSchema = z.object({available: z.boolean(), testMode: z.literal(true)});
+export const paymentStatusSchema = z.object({reference: z.string(), amountKobo: z.number().int(), currency: z.literal("NGN"), state: z.enum(["initializing", "initialized", "initialization_unknown", "successful", "failed"]), checkoutUrl: z.url().nullable(), message: z.string()});

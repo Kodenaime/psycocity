@@ -1,3 +1,6 @@
+import { createPaymentRouter } from "./payments/router.js";
+import type { CheckoutProvider } from "./payments/provider.js";
+import { createOfferRouters } from "./offers/router.js";
 import { createEventRouters } from "./events/router.js";
 import express from "express";
 import { createAdminRouters } from "./admin/router.js";
@@ -14,7 +17,7 @@ import type { IdentityService, Identity } from "./identity/service.js";
 import { requestContext, sendError } from "./http.js";
 
 // Construction has no listener or process side effects, so tests use the real app.
-export function createApp({ isDatabaseReady = async () => false, identityService, mail, authConfig, storage, adminKey }: { isDatabaseReady?: () => Promise<boolean>; identityService?: IdentityService; mail?: MailRuntime; authConfig?: AuthConfig; storage?: PrivateStorage | null; adminKey?: Buffer | null } = {}) {
+export function createApp({ isDatabaseReady = async () => false, identityService, mail, authConfig, storage, adminKey, checkoutProvider }: { isDatabaseReady?: () => Promise<boolean>; identityService?: IdentityService; mail?: MailRuntime; authConfig?: AuthConfig; storage?: PrivateStorage | null; adminKey?: Buffer | null; checkoutProvider?: CheckoutProvider | null } = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.use(requestContext);
@@ -50,6 +53,7 @@ export function createApp({ isDatabaseReady = async () => false, identityService
     app.use("/api/v1/applications/:applicationId/guardian", guardian.owner);
     app.use("/api/v1/guardian", guardian.publicRouter);
   }
+  if (identityService && authConfig) app.use("/api/v1/applications/:applicationId/offers", createOfferRouters(identityService, authConfig, mail ?? null).owner);
   if (identityService && authConfig) app.use("/api/v1/applications", createApplicationRouter(identityService, authConfig, mail ?? null));
   if (identityService && authConfig) app.use("/api/v1/invitations", createEventRouters(identityService, authConfig, mail ?? null).owner);
   if (identityService && authConfig) app.use("/api/v1/media", createMediaRouter(identityService, authConfig, storage ?? null));
@@ -57,6 +61,7 @@ export function createApp({ isDatabaseReady = async () => false, identityService
     const staff = createAdminRouters(identityService, mail ?? null, authConfig, adminKey ?? null);
     app.use("/api/v1/admin", staff.admin); app.use("/api/v1/staff", staff.activation);
   }
+  if (identityService && authConfig) app.use("/api/v1/payments", createPaymentRouter(identityService, authConfig, checkoutProvider ?? null));
   // Unknown API requests must never fall through to the web document.
   app.use("/api", (_request, response) => {
     sendError(response, 404, "NOT_FOUND", "API route not found");

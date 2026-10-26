@@ -112,6 +112,32 @@ test("reviews a submitted application and completes scoped applicant corrections
   await page.getByRole("button", {name: "Refresh application", exact: true}).click();
   await expect(page.getByText("+2348098765432", {exact: false})).toBeVisible();
   await expect(page.getByRole("paragraph").filter({hasText: "Private staff observation for review"})).toBeVisible();
+  await page.getByRole("button", {name: "Start review", exact: true}).click();
+  await expect(page.getByRole("button", {name: "Start review", exact: true})).toBeDisabled();
+  await page.getByRole("button", {name: "Record assessment completed", exact: true}).click();
+  await expect(page.getByRole("button", {name: "Record admission decision", exact: true})).toBeVisible();
+  await page.getByLabel("Admission decision", {exact: true}).selectOption("waitlist");
+  await page.getByLabel("Decision reason (visible to applicant)").fill("We are holding your assessed application for the next intake.");
+  await page.getByRole("button", {name: "Record admission decision", exact: true}).click();
+  await expect(page.getByText("Admission decision recorded", {exact: true})).toBeVisible();
+  await page.getByLabel("Admission decision", {exact: true}).selectOption("accept");
+  await page.getByLabel("Decision reason (visible to applicant)").fill("Your assessed application is accepted for the academy intake.");
+  await page.getByLabel("Offer deadline (days; default 14)").fill("7");
+  await page.getByRole("button", {name: "Record admission decision", exact: true}).click();
+  await expect(page.getByRole("heading", {name: /₦50,000/})).toBeVisible();
+  const offerContext = await browser.newContext();
+  try {
+    const owner = await offerContext.newPage(); await owner.goto("http://127.0.0.1:3101/applicant/login");
+    await owner.getByLabel("Email or username").fill(applicant.email); await owner.getByLabel("Password", {exact: true}).fill(applicant.password); await owner.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(owner).toHaveURL(/\/applicant\/dashboard$/);
+    await owner.goto(`http://127.0.0.1:3101/applicant/application/${applicant.id}`);
+    await expect(owner.getByRole("heading", {name: /₦50,000/})).toBeVisible();
+    await expect(owner.getByText(/Online checkout is not available yet/)).toBeVisible();
+    await expect(owner.getByRole("button", {name: /Pay/})).toHaveCount(0);
+    await owner.goto(`http://127.0.0.1:3101/applicant/payment-return?reference=psyc_${"0".repeat(40)}&status=success`);
+    await expect(owner.getByText(/Payment not found/)).toBeVisible();
+    await expect(owner.getByText(/Payment verification recorded/)).toHaveCount(0);
+  } finally {await offerContext.close();}
+
 });
 
 test("assigns admission slots, receives an RSVP and cancels the appointment", async ({page, request, browser}) => {

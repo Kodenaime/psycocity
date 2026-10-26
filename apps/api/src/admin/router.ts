@@ -1,3 +1,4 @@
+import { createOfferRouters } from "../offers/router.js";
 import { createEventRouters } from "../events/router.js";
 import express from "express";
 import { createReviewRouter } from "./review.js";
@@ -65,6 +66,7 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
     next();
   });
   admin.use("/events", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/applications", createOfferRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createReviewRouter(identity, mail, config, (actor, session) => service!.authorize(actor, session, false)));
   admin.get("/overview", async (_request, response) => {
     const [activeStaff, pendingInvitations, awaitingApplications, securedStaff] = await Promise.all([

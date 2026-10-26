@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run db:indexes && npx --no-install concurrently --kill-others "npm start" "npm run worker:mail"',
     url: "http://127.0.0.1:3101/api/v1/ready",
-    env: { NODE_ENV: "test", SERVE_WEB: "true", APP_ORIGIN: "http://127.0.0.1:3101", EMAIL_TRANSPORT: "local", PORT: "3101", MONGODB_URI: process.env.TEST_MONGODB_URI ?? "mongodb://127.0.0.1:27018/psycocity_test?replicaSet=rs0&directConnection=true" },
+    env: { NODE_ENV: "test", SERVE_WEB: "true", APP_ORIGIN: "http://127.0.0.1:3101", EMAIL_TRANSPORT: "local", PAYSTACK_SECRET_KEY: "", PORT: "3101", MONGODB_URI: process.env.TEST_MONGODB_URI ?? "mongodb://127.0.0.1:27018/psycocity_test?replicaSet=rs0&directConnection=true" },
     reuseExistingServer: false,
     timeout: 30_000,
     gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
