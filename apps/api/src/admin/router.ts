@@ -1,3 +1,5 @@
+import { createEnquiryRouters } from "../enquiries/router.js";
+import { createModerationRouter } from "../members/moderation.js";
 import { createMemberRouters } from "../members/router.js";
 import { createAdminPaymentRouter } from "../payments/admin.js";
 import type { VerificationProvider } from "../payments/verification-provider.js";
@@ -69,6 +71,8 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
     next();
   });
   admin.use(createMemberRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/portfolios", createModerationRouter(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)));
+  admin.use("/enquiries", createEnquiryRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/payments", createAdminPaymentRouter(identity, config, mail, verificationProvider, (actor, session) => service!.authorize(actor, session, false)));
   admin.use("/events", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createOfferRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);

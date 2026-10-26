@@ -24,7 +24,7 @@ export const apiPost = <T,>(path: string, body: unknown, schema: z.ZodType<T>) =
 export const apiPatch = <T,>(path: string, body: unknown, schema: z.ZodType<T>) => apiMutation("PATCH", path, body, schema);
 
 export async function uploadPhoto(grant: { uploadUrl: string; uploadToken: string }, file: File) {
-  if (!/^\/api\/v1\/media\/uploads\/[0-9a-f]{24}$/.test(grant.uploadUrl)) throw new ApiError(502, "INVALID_RESPONSE", "Invalid upload destination");
+  if (!/^\/api\/v1\/(?:media|member\/portfolio)\/uploads\/[0-9a-f]{24}$/.test(grant.uploadUrl)) throw new ApiError(502, "INVALID_RESPONSE", "Invalid upload destination");
   const csrf = document.cookie.split("; ").find(value => value.startsWith("psycocity_csrf="))?.split("=")[1];
   const response = await fetch(grant.uploadUrl, { method: "PUT", redirect: "error", credentials: "same-origin", headers: { "Content-Type": file.type, "X-Requested-With": "Psycocity", "X-Upload-Token": grant.uploadToken, ...(csrf ? { "X-CSRF-Token": csrf } : {}) }, body: file });
   const { messageSchema } = await import("@psycocity/validation");

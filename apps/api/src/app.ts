@@ -1,3 +1,7 @@
+import { createEnquiryRouters } from "./enquiries/router.js";
+import { createCatalogueRouter } from "./members/catalogue.js";
+import { createPortfolioRouter } from "./members/portfolio.js";
+import { createProfileRouter } from "./members/profiles.js";
 import { createMemberRouters } from "./members/router.js";
 import { createPaymentWebhook } from "./payments/webhook.js";
 import type { VerificationProvider } from "./payments/verification-provider.js";
@@ -66,7 +70,11 @@ export function createApp({ isDatabaseReady = async () => false, identityService
   }
   if (identityService) app.use("/api/v1/paystack/webhook", createPaymentWebhook(identityService, verificationProvider ?? null));
   if (identityService && authConfig) {const membership = createMemberRouters(identityService, authConfig, mail ?? null); app.use("/api/v1/member", membership.member); app.use("/api/v1/membership-invitations", membership.invitations);}
+  if (identityService && authConfig) app.use("/api/v1/member/portfolio", createPortfolioRouter(identityService, authConfig, storage ?? null));
+  if (identityService && authConfig) app.use("/api/v1/member", createProfileRouter(identityService, authConfig));
   if (identityService && authConfig) app.use("/api/v1/payments", createPaymentRouter(identityService, authConfig, checkoutProvider ?? null));
+  if (identityService) app.use("/api/v1/models", createCatalogueRouter(identityService, storage ?? null));
+  if (identityService && authConfig) app.use("/api/v1/enquiries", createEnquiryRouters(identityService, authConfig).publicRouter);
   // Unknown API requests must never fall through to the web document.
   app.use("/api", (_request, response) => {
     sendError(response, 404, "NOT_FOUND", "API route not found");

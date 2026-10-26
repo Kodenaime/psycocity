@@ -1,0 +1,47 @@
+import { randomBytes, randomUUID } from "node:crypto";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import * as OTPAuth from "otpauth";
+import request from "supertest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { createDatabase } from "../../apps/api/src/database.js";
+import { testMongoUri } from "../../apps/api/src/config.js";
+import { createIdentityModels } from "../../apps/api/src/identity/models.js";
+import { createIdentityService } from "../../apps/api/src/identity/service.js";
+import { readAuthConfig } from "../../apps/api/src/identity/config.js";
+import { createOutboxModel } from "../../apps/api/src/mail/models.js";
+import { createOutbox } from "../../apps/api/src/mail/outbox.js";
+import { localMailSender } from "../../apps/api/src/mail/delivery.js";
+import { createAdminService } from "../../apps/api/src/admin/service.js";
+import { createEnquiryModels } from "../../apps/api/src/enquiries/models.js";
+import { createEnquiryNotifications } from "../../apps/api/src/enquiries/notifications.js";
+import { createApp } from "../../apps/api/src/app.js";
+import { safeErrorHandler } from "../../apps/api/src/errors.js";
+const uri = process.env.TEST_MONGODB_URI ?? testMongoUri; if (!/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri)) throw new Error("Dedicated test database required");
+const database = createDatabase(uri); const connection = database.connection.useDb(`enquiries_${randomUUID().replaceAll("-", "")}_test`); const identity = createIdentityService(createIdentityModels(connection)); const key = randomBytes(32); const model = createOutboxModel(connection); const outbox = createOutbox(model, key); const {Enquiry, Note} = createEnquiryModels(connection);
+let directory: string; let headers: Record<string,string>; let staffId: string; const origin = "http://localhost:5173"; const common = {Origin: origin, "X-Requested-With": "Psycocity"};
+const mail = {...outbox, model, sender: localMailSender("test", ".cache/enquiry-fixture-mail")}; const app = createApp({identityService: identity, authConfig: readAuthConfig({APP_ORIGIN: origin}, "test"), mail, adminKey: key}); app.use(safeErrorHandler);
+beforeAll(async () => {await database.connect(); await mkdir(".cache", {recursive:true}); directory = await mkdtemp(".cache/enquiries-"); for (const value of Object.values(connection.models)) await value.createIndexes(); const user = await identity.models.User.create({emailNormalized: `${randomUUID()}@example.test`, roles:["admin"], staffStatus:"active", passwordHash:"session-fixture", emailVerifiedAt:new Date()}); staffId = String(user._id); const service = createAdminService(identity, mail, key, origin); const pending = await identity.issueSession(staffId); const actor = (await identity.authenticate(pending.token))!; const setup = (await service.enroll(actor))!; const verified = (await service.verifyMfa(actor, "totp", new OTPAuth.TOTP({secret: OTPAuth.Secret.fromBase32(setup.secret), algorithm:"SHA1", digits:6, period:30}).generate()))!; headers = {...common, Cookie:`psycocity_session=${verified.session.token}`, "X-CSRF-Token":verified.session.csrfToken};});
+afterAll(async () => {try {for (const value of Object.values(connection.models)) await value.collection.drop();} finally {await database.close(); if(directory) await rm(directory,{recursive:true,force:true});}});
+const fixture = () => ({requestKey: randomUUID(), type:"contact", name:"Enquiry Fixture", email:`${randomUUID()}@example.test`, description:"A sufficiently detailed enquiry for the agency team."});
+describe("persisted public enquiries and staff workflow", () => {
+  it("preserves submissions through notification failures and binds retries to the exact request", async () => {
+    const body = fixture(); const created = await request(app).post("/api/v1/enquiries").set(common).send(body).expect(201); const reference = created.body.reference;
+    expect((await request(app).post("/api/v1/enquiries").set(common).send(body).expect(200)).body.reference).toBe(reference);
+    await request(app).post("/api/v1/enquiries").set(common).send({...body, description:"Changed details must not replace the original enquiry."}).expect(409);
+    await request(app).post("/api/v1/enquiries").set(common).send({...body, requestKey:randomUUID()}).expect(429);
+    const record = (await Enquiry.findOne({reference}).lean())!; expect(await Enquiry.countDocuments({requestKey:body.requestKey})).toBe(1);
+    const failing = createEnquiryNotifications(identity, {...mail, enqueue:async () => {throw new Error("Synthetic enquiry mail outage");}}, origin); expect(await failing.runOnce()).toBe(true); expect((await Enquiry.findById(record._id).lean())?.notificationsQueuedAt).toBeFalsy();
+    await Enquiry.updateOne({_id:record._id}, {$set:{nextAttemptAt:new Date(0)}}); expect(await createEnquiryNotifications(identity,mail,origin).runOnce()).toBe(true); expect((await Enquiry.findById(record._id).lean())?.notificationsQueuedAt).toBeTruthy();
+    expect(await model.countDocuments({dedupeKey:`enquiry-ack:${record._id}`})).toBe(1);
+  });
+  it("rejects hidden/unknown preferences and honeypot data", async () => {await request(app).post("/api/v1/enquiries").set(common).send({...fixture(), type:"booking", modelId:randomBytes(12).toString("hex")}).expect(400); await request(app).post("/api/v1/enquiries").set(common).send({...fixture(), website:"spam.example"}).expect(400);});
+  it("allows equal staff assignment/notes with stale-update and private-response protection", async () => {
+    const created = await request(app).post("/api/v1/enquiries").set(common).send(fixture()).expect(201); const record = (await Enquiry.findOne({reference:created.body.reference}).lean())!;
+    await request(app).get("/api/v1/admin/enquiries").expect(401); const update = {version:0,status:"reviewing",outcome:null,assignedTo:staffId,note:"Private staff coordination note"};
+    await request(app).post(`/api/v1/admin/enquiries/${record._id}/update`).set(headers).send(update).expect(200); await request(app).post(`/api/v1/admin/enquiries/${record._id}/update`).set(headers).send(update).expect(409);
+    const detail = await request(app).get(`/api/v1/admin/enquiries/${record._id}`).set(headers).expect(200); expect(detail.body.notes[0].body).toBe(update.note);
+    await request(app).get(`/api/v1/enquiries/${record._id}`).expect(404); expect(await Note.countDocuments({enquiryId:record._id})).toBe(1);
+    await request(app).post(`/api/v1/admin/enquiries/${record._id}/update`).set(headers).send({...update,version:1,status:"closed",outcome:null}).expect(400);
+    await request(app).post(`/api/v1/admin/enquiries/${record._id}/update`).set(headers).send({...update,version:1,status:"closed",outcome:"converted",note:""}).expect(200);
+  });
+});

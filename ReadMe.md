@@ -230,3 +230,13 @@ Applicants see invitation status and a replacement-key action in their dashboard
 `/member/login` and `/member/dashboard` provide separate member access, with student/model portal switching and a route back to applicant access. Applicant-only accounts do not gain member permissions by signing in. Member APIs recheck authoritative membership, paid entitlement, refund/reconciliation and consent/age eligibility; a cached role alone is insufficient. The next phase adds the actual private profile/catalogue editor. Authentication clears account-specific query caches when accounts change.
 
 No live Paystack/account activation is claimed: verification remains limited to explicit local/test fixtures until real test keys and provider checks are available. Do not put keys or invitation tokens into Git or chat.
+
+## Profiles, catalogue and enquiries
+
+Student/model dashboards now have private contact profiles, separate from immutable applicant evidence. Represented adults also have a versioned professional editor with private portfolio uploads (20 images, JPEG/PNG/WebP, existing 10 MB/content/dimension/metadata checks), ordering/credits/alt text and cover selection. Save changes before submitting an immutable revision. Staff use **Portfolios** to compare/review/publish exact revisions; rejected later revisions preserve the last approved profile. Hide/unhide is separate from suspending login. Owners can privately preview approved revisions.
+
+The public **Models** directory/detail pages render approved projections on the server and serve thumbnails through visibility/eligibility-checked URLs. Hidden profiles/images are unavailable on subsequent requests and responses use no-store. Public responses never serialize private contacts, birth dates, applicant snapshots or credentials. Booking links prefill only a currently public model preference.
+
+**Contact** and **Booking** now persist rate-limited enquiries, acknowledge a reference and clearly avoid confirming/reserving a booking. The existing mail worker independently queues notifications, so an email outage does not lose a lead. Staff use **Enquiries** for assignment, private notes and versioned workflow/outcomes. Production collection remains subject to the policy gate.
+
+See the working [live-testing and configuration checklist](docs/live-testing-checklist.md). It will be finalized after the remaining implementation phases; no live provider or production release is claimed.
