@@ -1,0 +1,32 @@
+name: psycocity
+
+x-mongo: &mongo
+  image: mongo:8.0.17@sha256:9814652e33f0cf8b9fddea8b46dfc9d8e19b130dcfdd7b510ca58bb0d40c8b71
+  command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+  healthcheck:
+    test:
+      - CMD
+      - mongosh
+      - --quiet
+      - --eval
+      - 'try { rs.status(); } catch (e) { if (e.code === 94) { rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]}); } else { throw e; } } if (!db.hello().isWritablePrimary) { quit(1); }'
+    interval: 2s
+    timeout: 5s
+    retries: 30
+    start_period: 5s
+
+services:
+  mongodb:
+    <<: *mongo
+    ports: ["127.0.0.1:27017:27017"]
+    volumes: ["mongodb-data:/data/db"]
+  mongodb-test:
+    <<: *mongo
+    profiles: ["test"]
+    ports: ["127.0.0.1:27018:27017"]
+    tmpfs:
+      - /data/db
+      - /data/configdb
+
+volumes:
+  mongodb-data:

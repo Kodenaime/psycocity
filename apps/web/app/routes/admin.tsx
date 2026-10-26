@@ -1,0 +1,46 @@
+import { AdmissionEvents } from "../components/admission-events";
+import { ReviewQueue, ReviewDetail } from "../components/admissions-review";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminOverviewSchema, auditPageSchema, messageSchema, staffInvitationPageSchema, staffPageSchema } from "@psycocity/validation";
+import { ApiError, apiGet, apiPost } from "../lib/api";
+import { Field } from "../components/field";
+import { Button, Notice } from "../components/ui";
+export function meta() { return [{ title: "Agency administration — Psycocity" }, { name: "robots", content: "noindex" }]; }
+export default function Administration() {
+  const { pathname } = useLocation(); const navigate = useNavigate(); const client = useQueryClient();
+  const overview = useQuery({ queryKey: ["admin", "overview"], queryFn: ({ signal }) => apiGet("/admin/overview", adminOverviewSchema, signal), refetchOnMount: "always" });
+  const logout = useMutation({ mutationFn: () => apiPost("/auth/logout", {}, messageSchema), onSuccess: async () => { client.clear(); await navigate("/admin/login", { replace: true }); } });
+  useEffect(() => {
+    if (overview.isError && overview.error instanceof ApiError) {
+      if (overview.error.status === 401) void navigate("/admin/login", { replace: true });
+      if (overview.error.code === "MFA_REQUIRED") void navigate("/admin/mfa", { replace: true });
+    }
+  }, [overview.isError, overview.error, navigate]);
+  if (overview.isPending) return <main id="main" className="page wrap"><Notice>Loading administration…</Notice></main>;
+  if (overview.isError) return <main id="main" className="page wrap"><Notice error>{overview.error.message}</Notice><Link to="/admin/login">Staff sign-in</Link></main>;
+  return <main id="main" className="page wrap admin-page"><div className="admin-heading"><div><p className="eyebrow">AGENCY ADMINISTRATION</p><p>{overview.data.email}</p></div><Button className="button-secondary" disabled={logout.isPending} onClick={() => logout.mutate()}>Sign out</Button></div><nav className="portal-nav" aria-label="Administration navigation"><NavLink end to="/admin">Overview</NavLink><NavLink to="/admin/applications">Admissions</NavLink><NavLink to="/admin/events">Appointments</NavLink><NavLink to="/admin/staff">Staff access</NavLink><NavLink to="/admin/audit">Audit history</NavLink><Link to="/admin/mfa">Verify security</Link></nav>
+    {pathname === "/admin/events" ? <AdmissionEvents /> : pathname === "/admin/applications" ? <ReviewQueue /> : pathname.startsWith("/admin/applications/") ? <ReviewDetail /> : pathname === "/admin/staff" ? <Staff userId={overview.data.userId} securedCount={overview.data.securedStaff} /> : pathname === "/admin/audit" ? <Audit /> : <section><h1>Agency overview.</h1><p>Staff access is individual, invitation-only and protected with mandatory authenticator verification.</p><div className="metric-grid"><article><span>Active staff</span><strong>{overview.data.activeStaff}</strong></article><article><span>Pending staff invitations</span><strong>{overview.data.pendingInvitations}</strong></article><article><span>Applications awaiting review</span><strong>{overview.data.awaitingApplications}</strong></article></div><div className="actions"><Link className="button" to="/admin/applications">Review applications</Link><Link className="button button-secondary" to="/admin/staff">Manage staff access</Link><Link className="button button-secondary" to="/admin/audit">Review audit history</Link></div></section>}{logout.isError && <Notice error>{logout.error.message}</Notice>}
+  </main>;
+}
+function Staff({ userId, securedCount }: { userId: string; securedCount: number }) {
+  const client = useQueryClient(); const navigate = useNavigate(); const [cursor, setCursor] = useState<string>(); const [inviteCursor, setInviteCursor] = useState<string>();
+  const staff = useQuery({ queryKey: ["admin", "staff", cursor], queryFn: ({ signal }) => apiGet(`/admin/staff${cursor ? `?cursor=${cursor}` : ""}`, staffPageSchema, signal) });
+  const invites = useQuery({ queryKey: ["admin", "invites", inviteCursor], queryFn: ({ signal }) => apiGet(`/admin/invitations${inviteCursor ? `?cursor=${inviteCursor}` : ""}`, staffInvitationPageSchema, signal) });
+  async function refresh() { await client.invalidateQueries({ queryKey: ["admin"] }); }
+  const send = useMutation({ mutationFn: (email: string) => apiPost("/admin/invitations", { email }, messageSchema), onSuccess: refresh });
+  const revoke = useMutation({ mutationFn: (id: string) => apiPost(`/admin/invitations/${id}/revoke`, {}, messageSchema), onSuccess: refresh });
+  const deactivate = useMutation({ mutationFn: (id: string) => apiPost(`/admin/staff/${id}/deactivate`, {}, messageSchema), onSuccess: async (_data, id) => { if (id === userId) { client.clear(); await navigate("/admin/login", { replace: true }); } else await refresh(); } });
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); send.mutate(String(new FormData(event.currentTarget).get("email") ?? "")); }
+  return <section><h1>Staff access.</h1><p>All staff have the same operational permissions. At least one active administrator must remain.</p><form className="auth-form" onSubmit={submit}><Field label="Staff email address" name="email" type="email" required /><Button disabled={send.isPending}>Send staff invitation</Button></form>{send.isSuccess && <Notice>{send.data.message}</Notice>}
+    <div className="section-tools"><h2>Administrators</h2><Button className="button-secondary" onClick={() => void refresh()}>Refresh staff</Button></div>{staff.isPending ? <Notice>Loading staff…</Notice> : staff.isError ? <Notice error>{staff.error.message}</Notice> : <><div className="table-wrap" tabIndex={0} role="region" aria-label="Staff access table"><table><thead><tr><th>Email</th><th>Access</th><th>Authenticator</th><th>Action</th></tr></thead><tbody>{staff.data.items.map(person => <tr key={person.id}><td>{person.email}</td><td>{person.active ? "Active" : "Deactivated"}</td><td>{person.mfaEnabled ? "Enabled" : "Setup required"}</td><td><Button className="button-secondary" disabled={!person.active || (person.mfaEnabled && securedCount <= 1) || deactivate.isPending} onClick={() => { if (window.confirm("Deactivate this staff member’s administrative access?")) deactivate.mutate(person.id); }}>Deactivate staff access</Button></td></tr>)}</tbody></table></div><div className="actions">{cursor && <Button onClick={() => setCursor(undefined)}>First staff page</Button>}{staff.data.nextCursor && <Button onClick={() => setCursor(staff.data.nextCursor!)}>Next staff page</Button>}</div></>}
+    <h2>Invitations</h2>{invites.isPending ? <Notice>Loading invitations…</Notice> : invites.isError ? <Notice error>{invites.error.message}</Notice> : <><ul className="draft-list">{invites.data.items.map(invite => <li key={invite.id}><div><strong>{invite.email}</strong><p>{invite.status} · expires {new Date(invite.expiresAt).toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} WAT</p></div>{invite.status === "pending" && <Button className="button-secondary" disabled={revoke.isPending} onClick={() => revoke.mutate(invite.id)}>Revoke invitation</Button>}</li>)}</ul>{!invites.data.items.length && <p>No staff invitations yet.</p>}<div className="actions">{inviteCursor && <Button onClick={() => setInviteCursor(undefined)}>First invitation page</Button>}{invites.data.nextCursor && <Button onClick={() => setInviteCursor(invites.data.nextCursor!)}>Next invitation page</Button>}</div></>}
+    {(send.isError || revoke.isError || deactivate.isError) && <Notice error>{(send.error ?? revoke.error ?? deactivate.error)?.message} <Link to="/admin/mfa">Verify security again</Link> if requested.</Notice>}
+  </section>;
+}
+function Audit() {
+  const [cursor, setCursor] = useState<string>();
+  const query = useQuery({ queryKey: ["admin", "audit", cursor], queryFn: ({ signal }) => apiGet(`/admin/audit${cursor ? `?cursor=${cursor}` : ""}`, auditPageSchema, signal) });
+  return <section><h1>Audit history.</h1><p>Administrative access and security changes are recorded here. Audit records cannot be edited from the platform.</p>{query.isPending ? <Notice>Loading audit history…</Notice> : query.isError ? <Notice error>{query.error.message}</Notice> : <><div className="table-wrap" tabIndex={0} role="region" aria-label="Audit events"><table><thead><tr><th>Action</th><th>Staff member</th><th>Target reference</th><th>Time (WAT)</th></tr></thead><tbody>{query.data.items.map(item => <tr key={item.id}><td>{item.action.replaceAll(".", " — ").replaceAll("_", " ")}</td><td>{item.actorLabel}</td><td>{item.entityId ?? "—"}</td><td>{new Date(item.at).toLocaleString("en-NG", { timeZone: "Africa/Lagos" })}</td></tr>)}</tbody></table></div>{!query.data.items.length && <p>No audit events yet.</p>}<div className="actions">{cursor && <Button onClick={() => setCursor(undefined)}>First audit page</Button>}{query.data.nextCursor && <Button onClick={() => setCursor(query.data.nextCursor!)}>Next audit page</Button>}</div></>}</section>;
+}
