@@ -35,9 +35,11 @@
     "mail:smoke": "npm run mail:smoke -w @psycocity/api",
     "media:cleanup": "npm run media:cleanup -w @psycocity/api",
     "admin:bootstrap": "npm run admin:bootstrap -w @psycocity/api --",
-    "worker:payments": "npm run worker:payments -w @psycocity/api"
+    "worker:payments": "npm run worker:payments -w @psycocity/api",
+    "test:recovery": "node scripts/recovery.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
