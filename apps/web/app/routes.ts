@@ -11,7 +11,7 @@ export default [layout("components/site-layout.tsx", [
   route("admin/login", "routes/auth.tsx", { id: "auth-admin-login" }),
   route("admin/activate", "routes/staff-activate.tsx"),
   route("admin/mfa", "routes/admin-mfa.tsx"),
-  ...["admin", "admin/staff", "admin/audit", "admin/applications", "admin/applications/:id", "admin/events"].map(path => route(path, "routes/admin.tsx", { id: path.replaceAll("/", "-") })),
+  ...["admin", "admin/staff", "admin/audit", "admin/applications", "admin/applications/:id", "admin/events", "admin/payments", "admin/payments/:reference"].map(path => route(path, "routes/admin.tsx", { id: path.replaceAll("/", "-") })),
   route("apply", "routes/apply.tsx"),
   route("applicant/payment-return", "routes/payment-return.tsx"),
   route("applicant/dashboard", "routes/applicant-dashboard.tsx"),

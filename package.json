@@ -13,7 +13,7 @@
   },
   "packageManager": "npm@11.9.0",
   "scripts": {
-    "dev": "npm run build -w @psycocity/validation && npm run db:indexes && concurrently --kill-others --names contracts,api,web,mail \"npm run dev -w @psycocity/validation\" \"npm run dev -w @psycocity/api\" \"npm run dev -w @psycocity/web\" \"npm run worker:mail\"",
+    "dev": "npm run build -w @psycocity/validation && npm run db:indexes && concurrently --kill-others --names contracts,api,web,mail,payments \"npm run dev -w @psycocity/validation\" \"npm run dev -w @psycocity/api\" \"npm run dev -w @psycocity/web\" \"npm run worker:mail\" \"npm run worker:payments\"",
     "build": "npm run build -w @psycocity/validation && npm run build -w @psycocity/api && npm run build -w @psycocity/web",
     "typecheck": "npm run build -w @psycocity/validation && npm run typecheck --workspaces && tsc -p tsconfig.tools.json",
     "start": "npm run start -w @psycocity/api",
@@ -34,7 +34,8 @@
     "worker:mail": "npm run worker:mail -w @psycocity/api",
     "mail:smoke": "npm run mail:smoke -w @psycocity/api",
     "media:cleanup": "npm run media:cleanup -w @psycocity/api",
-    "admin:bootstrap": "npm run admin:bootstrap -w @psycocity/api --"
+    "admin:bootstrap": "npm run admin:bootstrap -w @psycocity/api --",
+    "worker:payments": "npm run worker:payments -w @psycocity/api"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

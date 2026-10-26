@@ -168,3 +168,19 @@ test("assigns admission slots, receives an RSVP and cancels the appointment", as
     await other.reload(); await expect(other.getByText(/Cancelled · RSVP: confirmed/)).toBeVisible(); await expect(other.getByRole("link", {name: "Private meeting link"})).toHaveCount(0);
   } finally {await context.close();}
 });
+
+test("shows verified test receipts privately to the payer and the staff reconciliation screen", async ({page, request, browser}) => {
+  const {settledPayment} = await import("./fixtures"); const payer = await settledPayment(request);
+  const email = `payment-staff-${randomUUID()}@example.test`; const password = "payment staff browser passphrase"; await seedInitialStaff(email, password);
+  await page.goto("/admin/login"); await page.getByLabel("Email or username").fill(email); await page.getByLabel("Password", {exact: true}).fill(password); await page.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(page).toHaveURL(/\/admin\/mfa$/); await enroll(page);
+  await page.getByRole("link", {name: "Payments", exact: true}).click(); await page.getByLabel("Payment filter", {exact: true}).selectOption("successful");
+  await page.locator(`a[href="/admin/payments/${payer.reference}"]`).click(); await expect(page.getByRole("heading", {name: "Test payment receipt", exact: true})).toBeVisible();
+  await page.getByRole("button", {name: "Request provider reconciliation", exact: true}).click(); await expect(page.getByText("Provider verification is not configured", {exact: true})).toBeVisible();
+  const ownerContext = await browser.newContext();
+  try {
+    const owner = await ownerContext.newPage(); await owner.goto("http://127.0.0.1:3101/applicant/login"); await owner.getByLabel("Email or username").fill(payer.email); await owner.getByLabel("Password", {exact: true}).fill(payer.password); await owner.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(owner).toHaveURL(/\/applicant\/dashboard$/);
+    await owner.getByRole("link", {name: "View payment record", exact: true}).click(); await expect(owner.getByRole("heading", {name: "Test payment receipt", exact: true})).toBeVisible(); await expect(owner.getByText("No live money was collected in this test transaction.", {exact: true})).toBeVisible();
+    await expect(owner.getByRole("button", {name: "Request provider reconciliation", exact: true})).toHaveCount(0);
+    await mailLink(payer.email, "receipt");
+  } finally {await ownerContext.close();}
+});

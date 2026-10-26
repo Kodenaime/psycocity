@@ -1,3 +1,4 @@
+import { createVerificationProvider } from "./payments/verification-provider.js";
 import { createCheckoutProvider } from "./payments/provider.js";
 import express from "express";
 import { createApp } from "./app.js";
@@ -25,14 +26,16 @@ const identityService = createIdentityService(createIdentityModels(database.conn
 let authConfig: ReturnType<typeof readAuthConfig>;
 let mail: Awaited<ReturnType<typeof createMailRuntime>>;
 let adminKey: Buffer | null;
+let verificationProvider: ReturnType<typeof createVerificationProvider>;
 let checkoutProvider: ReturnType<typeof createCheckoutProvider>;
 try {
+  verificationProvider = createVerificationProvider(process.env, config.mode);
   checkoutProvider = createCheckoutProvider(process.env, config.mode);
   authConfig = readAuthConfig(process.env, config.mode);
   mail = await createMailRuntime(database.connection, process.env, config.mode);
   adminKey = config.mode === "production" && !process.env.OUTBOX_ENCRYPTION_KEY ? null : await loadOutboxKey(config.mode, process.env.OUTBOX_ENCRYPTION_KEY);
 } catch { console.error("Invalid authentication, email or checkout configuration"); process.exit(1); }
-const app = createApp({ isDatabaseReady: database.isReady, identityService, mail, authConfig, adminKey, checkoutProvider, storage: createStorage(process.env, config.mode) });
+const app = createApp({ isDatabaseReady: database.isReady, identityService, mail, authConfig, adminKey, checkoutProvider, verificationProvider, storage: createStorage(process.env, config.mode) });
 const production = config.mode === "production";
 const port = config.port;
 let stopping = false;

@@ -12,7 +12,8 @@
     "worker:mail": "node --env-file-if-exists=../../.env --import tsx src/mail/worker.ts",
     "mail:smoke": "node --env-file-if-exists=../../.env --import tsx src/mail/smoke.ts",
     "media:cleanup": "node --env-file-if-exists=../../.env --import tsx src/media/cleanup.ts",
-    "admin:bootstrap": "node --env-file-if-exists=../../.env --import tsx src/admin/bootstrap.ts"
+    "admin:bootstrap": "node --env-file-if-exists=../../.env --import tsx src/admin/bootstrap.ts",
+    "worker:payments": "node --env-file-if-exists=../../.env --import tsx src/payments/worker.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.2",

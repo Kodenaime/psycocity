@@ -1,3 +1,5 @@
+import { pageQuerySchema } from "@psycocity/validation";
+import { createPaymentReader } from "./records.js";
 import express from "express";
 import { randomBytes } from "node:crypto";
 import { checkoutRequestSchema } from "@psycocity/validation";
@@ -16,6 +18,9 @@ export function createPaymentRouter(identity: IdentityService, config: AuthConfi
   const router = express.Router(); const connection = identity.models.User.db; const Payment = createPaymentModel(connection); const Offer = createOfferModel(connection); const {Application} = createApplicationModels(connection); const limit = createRateLimiter(createRateLimitModel(connection));
   router.use(requireIdentity(identity), requireRoles("applicant"), requireVerified, (_request, response, next) => {response.set("Cache-Control", "no-store"); next();});
   router.get("/capabilities", (_request, response) => {response.json({available: Boolean(provider) && !config.production, testMode: true});});
+  const reader = createPaymentReader(identity);
+  router.get("/", async (request, response) => {const query = pageQuerySchema.safeParse(request.query); if (!query.success) {sendError(response, 400, "INVALID_REQUEST", "Check payment pagination"); return;} response.json(await reader.list(query.data, (response.locals.identity as Identity).userId));});
+  router.get("/:reference/detail", async (request, response) => {const value = await reader.detail(String(request.params.reference), (response.locals.identity as Identity).userId); if (!value) {sendError(response, 404, "NOT_FOUND", "Payment not found"); return;} response.json(value);});
   type Payment = NonNullable<Awaited<ReturnType<typeof Payment.findOne>>>;
   const dto = (payment: Payment, allowCheckout: boolean) => ({reference: payment.reference, amountKobo: payment.amountKobo, currency: payment.currency, state: payment.state === "initializing" && payment.initializationExpiresAt <= new Date() ? "initialization_unknown" : payment.state, checkoutUrl: allowCheckout && payment.state === "initialized" ? payment.checkoutUrl ?? null : null, message: payment.state === "successful" ? "Payment verification recorded. Membership activation is separate." : "Payment is not confirmed. Returning from checkout does not activate membership. If initialization is uncertain, do not start a second payment; contact the agency."});
   router.get("/:reference", async (request, response) => {

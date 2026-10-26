@@ -1,3 +1,5 @@
+import { createAdminPaymentRouter } from "../payments/admin.js";
+import type { VerificationProvider } from "../payments/verification-provider.js";
 import { createOfferRouters } from "../offers/router.js";
 import { createEventRouters } from "../events/router.js";
 import express from "express";
@@ -16,7 +18,7 @@ import { createApplicationModels } from "../applications/models.js";
 import { createAdminModels } from "./models.js";
 import { AdminActionError, createAdminService } from "./service.js";
 
-export function createAdminRouters(identity: IdentityService, mail: MailRuntime, config: AuthConfig, key: Buffer | null) {
+export function createAdminRouters(identity: IdentityService, mail: MailRuntime, config: AuthConfig, key: Buffer | null, verificationProvider: VerificationProvider | null = null) {
   const models = createAdminModels(identity.models.User.db);
   const service = key ? createAdminService(identity, mail, key, config.origin) : null;
   const limit = createRateLimiter(createRateLimitModel(identity.models.User.db));
@@ -65,6 +67,7 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
     if (!(response.locals.identity as Identity).mfaVerified) { sendError(response, 403, "MFA_REQUIRED", "Complete staff security verification"); return; }
     next();
   });
+  admin.use("/payments", createAdminPaymentRouter(identity, config, mail, verificationProvider, (actor, session) => service!.authorize(actor, session, false)));
   admin.use("/events", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createOfferRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createReviewRouter(identity, mail, config, (actor, session) => service!.authorize(actor, session, false)));

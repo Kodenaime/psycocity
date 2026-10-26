@@ -37,3 +37,22 @@ export async function submittedApplicant(request: APIRequestContext) {
   expect((await request.post(`/api/v1/applications/${id}/submit`, {headers, data: {version: 1, declarations: {accuracy: true, termsAccepted: true, privacyAccepted: true, termsVersion: applicationTermsVersion, privacyVersion: applicationPrivacyVersion}}})).status()).toBe(200);
   return {id, email, password, name: data.personal.legalName};
 }
+
+export async function settledPayment(request: APIRequestContext) {
+  const applicant = await submittedApplicant(request); const uri = process.env.TEST_MONGODB_URI;
+  if (!uri || !/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri)) throw new Error("Dedicated E2E database required");
+  const [{createApplicationModels}, {createOfferModel}, {createPaymentModel}, {createSettlementService}, {createMailRuntime}, {admissionTermsText, admissionTermsVersion}] = await Promise.all([import("../../apps/api/src/applications/models.js"), import("../../apps/api/src/offers/models.js"), import("../../apps/api/src/payments/models.js"), import("../../apps/api/src/payments/settlement.js"), import("../../apps/api/src/mail/runtime.js"), import("@psycocity/validation")]);
+  const database = createDatabase(uri); let reference = "";
+  try {
+    await database.connect(); const connection = database.connection; const identity = createIdentityService(createIdentityModels(connection));
+    const user = (await identity.models.User.findOne({emailNormalized: applicant.email}).lean())!;
+    await createApplicationModels(connection).Application.updateOne({_id: applicant.id}, {$set: {status: "accepted"}});
+    const offer = await createOfferModel(connection).create({applicationId: applicant.id, ownerId: user._id, track: "academy", amountKobo: 5_000_000, currency: "NGN", termsVersion: admissionTermsVersion, termsText: admissionTermsText, expiresAt: new Date(Date.now() + 24 * 60 * 60_000), issuedBy: user._id, revision: 1, applicationVersion: 3});
+    reference = `psyc_${randomUUID().replaceAll("-", "")}${randomUUID().replaceAll("-", "").slice(0,8)}`;
+    await createPaymentModel(connection).create({offerId: offer._id, applicationId: applicant.id, ownerId: user._id, reference, amountKobo: offer.amountKobo, currency: "NGN", termsVersion: offer.termsVersion, termsAcceptedAt: new Date(), state: "initialized", initializationExpiresAt: new Date()});
+    const mail = await createMailRuntime(connection, {...process.env, EMAIL_TRANSPORT: "local"}, "test");
+    const service = createSettlementService(identity, {validSignature: () => false, verify: async () => ({id: `${Date.now()}${Math.floor(Math.random() * 10_000)}`, reference, status: "success", amount: offer.amountKobo, currency: "NGN", domain: "test", paid_at: new Date().toISOString(), customer: {email: applicant.email}, metadata: {applicationId: applicant.id, offerId: String(offer._id)}})}, mail, "http://127.0.0.1:3101");
+    expect(await service.runOnce(reference)).toBe(true);
+  } finally {await database.close();}
+  return {...applicant, reference};
+}

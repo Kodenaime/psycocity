@@ -143,3 +143,11 @@ export const applicationOffersSchema = z.object({items: z.array(admissionOfferSc
 export const checkoutRequestSchema = z.object({termsVersion: z.string().min(1).max(100), acceptsTerms: z.literal(true)}).strict();
 export const checkoutCapabilitiesSchema = z.object({available: z.boolean(), testMode: z.literal(true)});
 export const paymentStatusSchema = z.object({reference: z.string(), amountKobo: z.number().int(), currency: z.literal("NGN"), state: z.enum(["initializing", "initialized", "initialization_unknown", "successful", "failed"]), checkoutUrl: z.url().nullable(), message: z.string()});
+
+export const paymentSummarySchema = z.object({reference: z.string(), amountKobo: z.number().int(), currency: z.literal("NGN"), state: z.string(), reviewReason: z.string(), refundedKobo: z.number().int(), createdAt: z.iso.datetime(), verifiedAt: z.iso.datetime().nullable(), applicationId: z.string()});
+export const paymentPageSchema = z.object({items: z.array(paymentSummarySchema), nextCursor: z.string().nullable()});
+export const paymentReviewQuerySchema = pageQuerySchema.extend({review: z.enum(["all", "anomalies", "unresolved", "successful"]).default("all")});
+export const paymentReceiptSchema = z.object({number: z.string(), amountKobo: z.number().int(), currency: z.literal("NGN"), paidAt: z.iso.datetime(), termsVersion: z.string()});
+export const paymentRefundSchema = z.object({providerRefundId: z.string(), amountKobo: z.number().int(), status: z.string(), updatedAt: z.iso.datetime(), internalNote: z.string().optional()});
+export const paymentDetailSchema = paymentSummarySchema.extend({receipt: paymentReceiptSchema.nullable(), refunds: z.array(paymentRefundSchema)});
+export const refundRecordSchema = z.object({providerRefundId: z.string().regex(/^[1-9][0-9]{0,30}$/), note: z.string().trim().min(10).max(1000)}).strict();
