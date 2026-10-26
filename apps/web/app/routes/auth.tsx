@@ -5,8 +5,9 @@ import { authCapabilitiesSchema, emailRequestSchema, loginSchema, loginResponseS
 import { Field } from "../components/field";
 import { Button, Notice } from "../components/ui";
 import { apiGet, apiPost } from "../lib/api";
-export function meta() { return [{ title: "Applicant access — Psycocity" }, { name: "robots", content: "noindex" }]; }
+export function meta() { return [{ title: "Account access — Psycocity" }, { name: "robots", content: "noindex" }]; }
 const modes = {
+  "/member/login": {heading: "Member access.", description: "Member access is invitation-only. Sign in with your email or member username after separate membership registration.", action: "Sign in", endpoint: "login", schema: loginSchema},
   "/admin/login": { heading: "Staff access.", description: "Sign in, then verify with your authenticator. Staff access is invitation-only.", action: "Sign in", endpoint: "login", schema: loginSchema },
   "/applicant/register": { heading: "Your next chapter.", description: "Create your applicant account. Application submission is free; member activation is separate.", action: "Create applicant account", endpoint: "register", schema: registerSchema },
   "/applicant/login": { heading: "Welcome back.", description: "Sign in to your applicant account.", action: "Sign in", endpoint: "login", schema: loginSchema },
@@ -24,7 +25,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const capabilities = useQuery({ queryKey: ["auth", "capabilities"], queryFn: ({ signal }) => apiGet("/auth/capabilities", authCapabilitiesSchema, signal) });
   const mutation = useMutation({ mutationFn: (body: unknown) => apiPost(`/auth/${mode.endpoint}`, body, mode.endpoint === "login" ? loginResponseSchema : messageSchema), onSuccess: async data => {
-    if (mode.endpoint === "login") { client.removeQueries({ queryKey: ["auth", "me"] }); await navigate("mfaRequired" in data && data.mfaRequired ? "/admin/mfa" : "/applicant/dashboard"); }
+    if (mode.endpoint === "login") { client.clear(); await navigate("mfaRequired" in data && data.mfaRequired ? "/admin/mfa" : pathname === "/member/login" ? "/member/dashboard" : "/applicant/dashboard"); }
     if (mode.endpoint === "reset-password" || mode.endpoint === "verify-email") await navigate(pathname, { replace: true });
   } });
   const isToken = mode.endpoint === "verify-email" || mode.endpoint === "reset-password";
@@ -42,7 +43,7 @@ export default function Auth() {
     }
     setErrors({}); mutation.mutate(parsed.data);
   }
-  return <main id="main" className="page wrap auth-page"><p className="eyebrow">{pathname.startsWith("/admin") ? "STAFF ACCESS" : "APPLICANT ACCESS"}</p><h1>{mode.heading}</h1><p className="lede">{mode.description}</p>
+  return <main id="main" className="page wrap auth-page"><p className="eyebrow">{pathname.startsWith("/admin") ? "STAFF ACCESS" : pathname.startsWith("/member") ? "MEMBER ACCESS" : "APPLICANT ACCESS"}</p><h1>{mode.heading}</h1><p className="lede">{mode.description}</p>
     {capabilities.data?.testMode && <p className="test-banner">Development environment — use sample details only.</p>}
     {needsMail && capabilities.isPending ? <Notice>Checking account availability…</Notice> : unavailable ? <Notice>Account registration and email requests are not available yet.</Notice> : mutation.isSuccess && mode.endpoint !== "login" ? <Notice>{mutation.data.message}</Notice> : <form className="auth-form" onSubmit={submit} noValidate>
       {["register", "forgot-password", "resend-verification"].includes(mode.endpoint) && <Field label="Email address" name="email" type="email" autoComplete="email" required error={errors.email} />}
@@ -52,6 +53,6 @@ export default function Auth() {
       {mutation.isError && <Notice error>{mutation.error instanceof Error ? mutation.error.message : "Please try again"}</Notice>}
       <Button type="submit" disabled={mutation.isPending || capabilities.isPending}>{mutation.isPending ? "Please wait…" : mode.action}</Button>
     </form>}
-    <nav className="account-links" aria-label="Account options"><Link to="/applicant/login">Sign in</Link>{!pathname.startsWith("/admin") && <Link to="/applicant/register">Create an account</Link>}<Link to="/applicant/forgot-password">Forgot password?</Link><Link to="/applicant/resend-verification">Resend verification</Link></nav>
+    <nav className="account-links" aria-label="Account options"><Link to={pathname.startsWith("/member") ? "/member/login" : "/applicant/login"}>Sign in</Link>{pathname.startsWith("/member") && <Link to="/member/activate">Register with an invitation</Link>}{!pathname.startsWith("/admin") && !pathname.startsWith("/member") && <Link to="/applicant/register">Create an account</Link>}<Link to="/applicant/forgot-password">Forgot password?</Link><Link to="/applicant/resend-verification">Resend verification</Link></nav>
   </main>;
 }

@@ -151,3 +151,8 @@ export const paymentReceiptSchema = z.object({number: z.string(), amountKobo: z.
 export const paymentRefundSchema = z.object({providerRefundId: z.string(), amountKobo: z.number().int(), status: z.string(), updatedAt: z.iso.datetime(), internalNote: z.string().optional()});
 export const paymentDetailSchema = paymentSummarySchema.extend({receipt: paymentReceiptSchema.nullable(), refunds: z.array(paymentRefundSchema)});
 export const refundRecordSchema = z.object({providerRefundId: z.string().regex(/^[1-9][0-9]{0,30}$/), note: z.string().trim().min(10).max(1000)}).strict();
+
+export const memberActivationSchema = z.object({token: z.string().regex(/^[0-9a-f]{64}$/), email: emailSchema, password: z.string().min(1).max(128), username: z.preprocess(value => value === "" ? undefined : value, z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9._]{2,29}$/).refine(value => !["admin", "api", "member", "support", "psycocity"].includes(value), "Choose another username").optional())}).strict();
+export const memberActivationResponseSchema = z.object({message: z.string(), type: z.enum(["student", "model"]), mfaRequired: z.boolean()});
+export const membershipAccessSchema = z.object({email: z.email(), memberships: z.array(z.object({id: z.string(), type: z.enum(["student", "model"]), status: z.enum(["active", "suspended"]), accessible: z.boolean()}))});
+export const memberInvitationStatusSchema = z.object({entitlements: z.array(z.object({id: z.string(), applicationId: z.string(), type: z.enum(["student", "model"]), status: z.enum(["pending", "activated", "revoked"]), eligible: z.boolean(), invitationStatus: z.enum(["pending", "used", "revoked", "expired", "not_issued"]), expiresAt: z.iso.datetime().nullable()})), defaultExpiryDays: z.literal(7)});

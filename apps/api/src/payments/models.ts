@@ -3,12 +3,13 @@ const schema = new Schema({
   offerId: {type: Schema.Types.ObjectId, required: true, immutable: true}, applicationId: {type: Schema.Types.ObjectId, required: true, immutable: true}, ownerId: {type: Schema.Types.ObjectId, required: true, immutable: true},
   reference: {type: String, required: true, immutable: true}, amountKobo: {type: Number, required: true, immutable: true}, currency: {type: String, enum: ["NGN"], required: true, immutable: true},
   termsVersion: {type: String, required: true, immutable: true}, termsAcceptedAt: {type: Date, required: true, immutable: true},
-  verifiedAt: Date, providerId: String, paidAt: Date, receiptIssuedAt: Date,
+  membershipProvisionedAt: Date, membershipRevision: {type: Number, default: 0}, membershipNextAttemptAt: {type: Date, default: Date.now}, verifiedAt: Date, providerId: String, paidAt: Date, receiptIssuedAt: Date,
   reviewReason: {type: String, enum: ["", "verification_mismatch", "late_settlement", "duplicate_charge", "eligibility_changed"], default: ""},
   nextVerifyAt: {type: Date, default: Date.now}, verificationLeaseUntil: {type: Date, default: () => new Date(0)}, verificationLeaseToken: {type: String, select: false}, verificationAttempts: {type: Number, default: 0}, lastVerificationError: {type: String, default: ""}, refundedKobo: {type: Number, default: 0},
   state: {type: String, enum: ["initializing", "initialized", "initialization_unknown", "successful", "failed"], default: "initializing", required: true},
   active: {type: Boolean, default: true, required: true}, checkoutUrl: {type: String, select: false}, initializationExpiresAt: {type: Date, required: true},
 }, {timestamps: true, strict: "throw", versionKey: false});
+schema.index({state: 1, membershipNextAttemptAt: 1});
 schema.index({state: 1, nextVerifyAt: 1, verificationLeaseUntil: 1});
 schema.index({providerId: 1}, {unique: true, partialFilterExpression: {providerId: {$type: "string"}}});
 schema.index({reference: 1}, {unique: true}); schema.index({offerId: 1}, {unique: true, partialFilterExpression: {active: true}}); schema.index({ownerId: 1, createdAt: -1});

@@ -1,0 +1,14 @@
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { memberActivationSchema, memberActivationResponseSchema } from "@psycocity/validation";
+import { apiPost } from "../lib/api";
+import { Field } from "../components/field";
+import { Button, Notice } from "../components/ui";
+export function meta() {return [{title: "Member registration — Psycocity"}, {name: "robots", content: "noindex"}];}
+export default function MemberActivation() {
+  const [params] = useSearchParams(); const [error, setError] = useState(""); const client = useQueryClient(); const navigate = useNavigate();
+  const activate = useMutation({mutationFn: (body: unknown) => apiPost("/member/activate", body, memberActivationResponseSchema), onSuccess: async data => {client.clear(); await navigate(data.mfaRequired ? "/admin/mfa" : `/member/${data.type}`, {replace: true});}});
+  function submit(event: FormEvent<HTMLFormElement>) {event.preventDefault(); const input = memberActivationSchema.safeParse(Object.fromEntries(new FormData(event.currentTarget))); if (!input.success) {setError("Provide the invitation key, verified applicant email and current password. Optional usernames use 3–30 lowercase letters, numbers, dots or underscores."); return;} setError(""); activate.mutate(input.data);}
+  return <main id="main" className="page wrap auth-page"><p className="eyebrow">INVITATION-ONLY MEMBER REGISTRATION</p><h1>Your member chapter.</h1><p className="lede">Use your private invitation and the verified applicant account that paid the fee. Your current password proves ownership; this form does not change it or create another applicant account.</p><form className="auth-form" onSubmit={submit}><Field label="Invitation key" name="token" type="password" required defaultValue={params.get("token") ?? ""} autoComplete="off" /><Field label="Verified applicant email" name="email" type="email" required autoComplete="email" /><Field label="Current account password" name="password" type="password" required autoComplete="current-password" /><Field label="Member username (optional)" name="username" autoComplete="username" hint="Choose a username if you do not already have one. Leave blank to keep your email or existing username." /><Button disabled={activate.isPending}>Complete member registration</Button></form>{error && <Notice error>{error}</Notice>}{activate.isError && <Notice error>{activate.error.message}</Notice>}<nav className="account-links" aria-label="Membership options"><Link to="/applicant/dashboard">Request a replacement invitation</Link><Link to="/applicant/forgot-password">Forgot current password?</Link><Link to="/member/login">Member sign-in</Link></nav></main>;
+}

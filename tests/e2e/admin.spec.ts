@@ -1,3 +1,4 @@
+import { createIdentityService } from "../../apps/api/src/identity/service.js";
 import { randomUUID } from "node:crypto";
 import * as OTPAuth from "otpauth";
 import { expect, test, type Page } from "@playwright/test";
@@ -6,13 +7,15 @@ import { createIdentityModels } from "../../apps/api/src/identity/models.js";
 import { hashPassword } from "../../apps/api/src/identity/password.js";
 import { mailLink, cleanupMailFixtures } from "./mail";
 
-async function seedInitialStaff(email: string, password: string) {
+async function seedInitialStaff(email: string, password: string, pendingSession = false) {
   const uri = process.env.TEST_MONGODB_URI;
   if (!uri || !/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri)) throw new Error("Dedicated E2E database required");
   const database = createDatabase(uri);
   try {
     await database.connect();
-    await createIdentityModels(database.connection).User.create({ emailNormalized: email, passwordHash: await hashPassword(password), roles: ["admin"], staffStatus: "active", emailVerifiedAt: new Date() });
+    const models = createIdentityModels(database.connection);
+    const user = await models.User.create({ emailNormalized: email, passwordHash: await hashPassword(password), roles: ["admin"], staffStatus: "active", emailVerifiedAt: new Date() });
+    if (pendingSession) return await createIdentityService(models).issueSession(String(user._id));
   } finally { await database.close(); }
 }
 async function enroll(page: Page) {
@@ -29,6 +32,13 @@ async function enroll(page: Page) {
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole("heading", { name: "Agency overview." })).toBeVisible();
   return codes;
+}
+async function fixtureStaffSession(page: Page, email: string, password: string) {
+  // Password login is covered by the staff-security journey. These feature
+  // fixtures still complete real MFA and retain all production abuse limits.
+  const session = (await seedInitialStaff(email, password, true))!;
+  await page.context().addCookies([{name: "psycocity_session", value: session.token, url: "http://127.0.0.1:3101", httpOnly: true, sameSite: "Lax"}, {name: "psycocity_csrf", value: session.csrfToken, url: "http://127.0.0.1:3101", httpOnly: false, sameSite: "Lax"}]);
+  await page.goto("/admin/mfa"); await enroll(page);
 }
 test.afterEach(cleanupMailFixtures);
 
@@ -79,9 +89,7 @@ test("enforces staff MFA, invitations, equal access, revocation and audited reco
 test("reviews a submitted application and completes scoped applicant corrections", async ({ page, request, browser }) => {
   const { submittedApplicant } = await import("./fixtures"); const applicant = await submittedApplicant(request);
   const email = `review-staff-${randomUUID()}@example.test`; const password = "staff review browser passphrase";
-  await seedInitialStaff(email, password);
-  await page.goto("/admin/login"); await page.getByLabel("Email or username").fill(email); await page.getByLabel("Password", {exact: true}).fill(password); await page.getByRole("button", {name: "Sign in", exact: true}).click();
-  await expect(page).toHaveURL(/\/admin\/mfa$/); await enroll(page);
+  await fixtureStaffSession(page, email, password);
   await page.getByRole("link", {name: "Admissions", exact: true}).click();
   await page.getByRole("row").filter({hasText: applicant.name}).getByRole("link", {name: "Review application"}).click();
   await expect(page.getByRole("heading", {name: applicant.name})).toBeVisible();
@@ -142,8 +150,7 @@ test("reviews a submitted application and completes scoped applicant corrections
 
 test("assigns admission slots, receives an RSVP and cancels the appointment", async ({page, request, browser}) => {
   const {submittedApplicant} = await import("./fixtures"); const applicant = await submittedApplicant(request);
-  const email = `schedule-staff-${randomUUID()}@example.test`; const password = "scheduling staff browser passphrase"; await seedInitialStaff(email, password);
-  await page.goto("/admin/login"); await page.getByLabel("Email or username").fill(email); await page.getByLabel("Password", {exact: true}).fill(password); await page.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(page).toHaveURL(/\/admin\/mfa$/); await enroll(page);
+  const email = `schedule-staff-${randomUUID()}@example.test`; const password = "scheduling staff browser passphrase"; await fixtureStaffSession(page, email, password);
   await page.getByRole("link", {name: "Appointments", exact: true}).click();
   const title = `Admission session ${randomUUID().slice(0,8)}`;
   const start = Date.now() + 30 * 24 * 60 * 60_000;
@@ -171,8 +178,7 @@ test("assigns admission slots, receives an RSVP and cancels the appointment", as
 
 test("shows verified test receipts privately to the payer and the staff reconciliation screen", async ({page, request, browser}) => {
   const {settledPayment} = await import("./fixtures"); const payer = await settledPayment(request);
-  const email = `payment-staff-${randomUUID()}@example.test`; const password = "payment staff browser passphrase"; await seedInitialStaff(email, password);
-  await page.goto("/admin/login"); await page.getByLabel("Email or username").fill(email); await page.getByLabel("Password", {exact: true}).fill(password); await page.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(page).toHaveURL(/\/admin\/mfa$/); await enroll(page);
+  const email = `payment-staff-${randomUUID()}@example.test`; const password = "payment staff browser passphrase"; await fixtureStaffSession(page, email, password);
   await page.getByRole("link", {name: "Payments", exact: true}).click(); await page.getByLabel("Payment filter", {exact: true}).selectOption("successful");
   await page.locator(`a[href="/admin/payments/${payer.reference}"]`).click(); await expect(page.getByRole("heading", {name: "Test payment receipt", exact: true})).toBeVisible();
   await page.getByRole("button", {name: "Request provider reconciliation", exact: true}).click(); await expect(page.getByText("Provider verification is not configured", {exact: true})).toBeVisible();

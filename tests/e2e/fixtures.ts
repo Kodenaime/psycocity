@@ -56,3 +56,16 @@ export async function settledPayment(request: APIRequestContext) {
   } finally {await database.close();}
   return {...applicant, reference};
 }
+
+export async function invitedMember(request: APIRequestContext) {
+  const payer = await settledPayment(request); const uri = process.env.TEST_MONGODB_URI;
+  if (!uri || !/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri)) throw new Error("Dedicated E2E database required");
+  const [{createMembershipService}, {createPaymentModel}, {createMailRuntime}] = await Promise.all([import("../../apps/api/src/members/service.js"), import("../../apps/api/src/payments/models.js"), import("../../apps/api/src/mail/runtime.js")]);
+  const database = createDatabase(uri);
+  try {
+    await database.connect(); const identity = createIdentityService(createIdentityModels(database.connection)); const payment = (await createPaymentModel(database.connection).findOne({reference: payer.reference}).lean())!;
+    const mail = await createMailRuntime(database.connection, {...process.env, EMAIL_TRANSPORT: "local"}, "test");
+    expect(await createMembershipService(identity, mail, "http://127.0.0.1:3101").ensure(payment._id)).toBeTruthy();
+  } finally {await database.close();}
+  return payer;
+}

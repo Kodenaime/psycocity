@@ -1,3 +1,4 @@
+import { createMemberRouters } from "./members/router.js";
 import { createPaymentWebhook } from "./payments/webhook.js";
 import type { VerificationProvider } from "./payments/verification-provider.js";
 import { createPaymentRouter } from "./payments/router.js";
@@ -64,6 +65,7 @@ export function createApp({ isDatabaseReady = async () => false, identityService
     app.use("/api/v1/admin", staff.admin); app.use("/api/v1/staff", staff.activation);
   }
   if (identityService) app.use("/api/v1/paystack/webhook", createPaymentWebhook(identityService, verificationProvider ?? null));
+  if (identityService && authConfig) {const membership = createMemberRouters(identityService, authConfig, mail ?? null); app.use("/api/v1/member", membership.member); app.use("/api/v1/membership-invitations", membership.invitations);}
   if (identityService && authConfig) app.use("/api/v1/payments", createPaymentRouter(identityService, authConfig, checkoutProvider ?? null));
   // Unknown API requests must never fall through to the web document.
   app.use("/api", (_request, response) => {

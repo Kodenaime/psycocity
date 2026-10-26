@@ -1,3 +1,4 @@
+import { createMemberModels } from "./members/models.js";
 import { createPaymentModel, createFinancialModels, createRefundModel } from "./payments/models.js";
 import { createOfferModel } from "./offers/models.js";
 import { createEventModels } from "./events/models.js";
@@ -15,6 +16,7 @@ const config = readConfig(process.env);
 const database = createDatabase(config.mongoUri);
 try {
   await database.connect();
+  for (const model of Object.values(createMemberModels(database.connection))) await model.createIndexes();
   await createPaymentModel(database.connection).createIndexes();
   await createRefundModel(database.connection).createIndexes();
   for (const model of Object.values(createFinancialModels(database.connection))) await model.createIndexes();

@@ -1,0 +1,24 @@
+import { randomUUID } from "node:crypto";
+import { expect, test } from "@playwright/test";
+import { invitedMember, submittedApplicant } from "./fixtures";
+import { mailLink, cleanupMailFixtures } from "./mail";
+test.afterEach(cleanupMailFixtures);
+test("registers a paid student with a private key, rotates access and signs in by member username", async ({page, request, context}) => {
+  const applicant = await invitedMember(request); const username = `member_${randomUUID().slice(0,8)}`;
+  await page.goto("/applicant/login"); await page.getByLabel("Email or username").fill(applicant.email); await page.getByLabel("Password", {exact: true}).fill(applicant.password); await page.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(page).toHaveURL(/\/applicant\/dashboard$/);
+  await expect(page.getByRole("heading", {name: "Academy student registration", exact: true})).toBeVisible();
+  expect((await page.request.get("/api/v1/member/student")).status()).toBe(403);
+  await page.getByRole("button", {name: "Send replacement key", exact: true}).click(); await expect(page.getByText(/Wait one minute after an issue/)).toBeVisible();
+  const previousSession = (await context.cookies()).find(cookie => cookie.name === "psycocity_session")!.value;
+  const invitation = await mailLink(applicant.email, "Activate your Psycocity membership"); const token = new URL(invitation).searchParams.get("token")!;
+  await page.goto(invitation); await page.getByLabel("Verified applicant email", {exact: true}).fill(applicant.email); await page.getByLabel("Current account password", {exact: true}).fill(applicant.password); await page.getByLabel("Member username (optional)", {exact: true}).fill(username); await page.getByRole("button", {name: "Complete member registration", exact: true}).click();
+  await expect(page).toHaveURL(/\/member\/student$/); await expect(page.getByRole("heading", {name: "Your academy membership.", exact: true})).toBeVisible();
+  await expect(page.getByRole("link", {name: "Academy student portal", exact: true})).toBeVisible(); await expect(page.getByRole("link", {name: "Agency model portal", exact: true})).toHaveCount(0);
+  expect((await page.request.get("/api/v1/member/model")).status()).toBe(403); expect((await context.cookies()).find(cookie => cookie.name === "psycocity_session")!.value).not.toBe(previousSession);
+  const replay = await page.request.post("/api/v1/member/activate", {headers: {Origin: "http://127.0.0.1:3101", "X-Requested-With": "Psycocity"}, data: {token, email: applicant.email, password: applicant.password}}); expect(replay.status()).toBe(400);
+  await page.getByRole("link", {name: "Switch to applicant portal", exact: true}).click(); await expect(page.getByRole("link", {name: "Switch to member portal", exact: true})).toBeVisible();
+  await page.getByRole("button", {name: "Sign out", exact: true}).click(); await page.goto("/member/login"); await page.getByLabel("Email or username").fill(username); await page.getByLabel("Password", {exact: true}).fill(applicant.password); await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await expect(page).toHaveURL(/\/member\/dashboard$/); await page.getByRole("link", {name: "Academy student portal", exact: true}).click(); await expect(page).toHaveURL(/\/member\/student$/);
+  const other = await submittedApplicant(request); await page.goto("/member/login"); await page.getByLabel("Email or username").fill(other.email); await page.getByLabel("Password", {exact: true}).fill(other.password); await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await expect(page).toHaveURL(/\/member\/dashboard$/); await expect(page.getByText("You do not have access to this action", {exact: true})).toBeVisible(); await expect(page.getByText(applicant.email, {exact: true})).toHaveCount(0);
+});

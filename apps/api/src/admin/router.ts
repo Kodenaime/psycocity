@@ -1,3 +1,4 @@
+import { createMemberRouters } from "../members/router.js";
 import { createAdminPaymentRouter } from "../payments/admin.js";
 import type { VerificationProvider } from "../payments/verification-provider.js";
 import { createOfferRouters } from "../offers/router.js";
@@ -67,6 +68,7 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
     if (!(response.locals.identity as Identity).mfaVerified) { sendError(response, 403, "MFA_REQUIRED", "Complete staff security verification"); return; }
     next();
   });
+  admin.use(createMemberRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/payments", createAdminPaymentRouter(identity, config, mail, verificationProvider, (actor, session) => service!.authorize(actor, session, false)));
   admin.use("/events", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createOfferRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);

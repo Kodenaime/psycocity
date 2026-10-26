@@ -2,6 +2,7 @@ import { Schema, type Connection } from "mongoose";
 const outboxSchema = new Schema({
   dedupeKey: { type: String, required: true },
   encryptedPayload: { type: String, select: false },
+  payloadExpiresAt: Date,
   state: { type: String, enum: ["pending", "processing", "delivered", "failed"], default: "pending", required: true },
   attempts: { type: Number, default: 0, required: true },
   nextAttemptAt: { type: Date, default: Date.now, required: true },
