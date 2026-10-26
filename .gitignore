@@ -12,3 +12,8 @@ dist/
 playwright-report/
 test-results/
 .local/
+
+# Deployment files with filled secrets stay local; templates remain reviewable.
+*.env
+*.env.*
+!*.env.example

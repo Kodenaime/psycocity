@@ -1,3 +1,5 @@
+import { initializeContent } from "./content/models.js";
+import { createAcademyModels } from "./academy/models.js";
 import { createEnquiryModels } from "./enquiries/models.js";
 import { createProfileModels } from "./members/profiles-models.js";
 import { createMemberModels } from "./members/models.js";
@@ -18,6 +20,8 @@ const config = readConfig(process.env);
 const database = createDatabase(config.mongoUri);
 try {
   await database.connect();
+  await initializeContent(database.connection);
+  for (const model of Object.values(createAcademyModels(database.connection))) await model.createIndexes();
   for (const model of Object.values(createEnquiryModels(database.connection))) await model.createIndexes();
   for (const model of Object.values(createProfileModels(database.connection))) await model.createIndexes();
   for (const model of Object.values(createMemberModels(database.connection))) await model.createIndexes();

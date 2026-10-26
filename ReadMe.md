@@ -240,3 +240,20 @@ The public **Models** directory/detail pages render approved projections on the 
 **Contact** and **Booking** now persist rate-limited enquiries, acknowledge a reference and clearly avoid confirming/reserving a booking. The existing mail worker independently queues notifications, so an email outage does not lose a lead. Staff use **Enquiries** for assignment, private notes and versioned workflow/outcomes. Production collection remains subject to the policy gate.
 
 See the working [live-testing and configuration checklist](docs/live-testing-checklist.md). It will be finalized after the remaining implementation phases; no live provider or production release is claimed.
+
+### Academy and staff operations
+
+The member student portal now links paid enrolments to private cohort homes. Staff manage capacity/archive policy in **Academy cohorts**, then use **Manage teaching** for Lagos-time hybrid sessions, resources, attendance corrections, progress, assignments and certificates. Configure actual completion criteria and thresholds before assessing completion. Adult representation requires a separate requested review and staff approval; the model profile still requires portfolio publication review. No second fee is collected by this transition.
+
+Course files and assignment submissions currently support private UTF-8 text files up to 64 KB and approved HTTPS learning links. PDFs, video and arbitrary office uploads are not supported. Portfolio photos continue using the normalized private-image service. Certificate records can be printed privately; they do not claim outside accreditation and have no public personal-data lookup.
+
+**Content & operations** manages structured homepage/academy draft/preview/publication, private operational counts and safe retries of unexpired failed email. It cannot mark payments successful or resurrect expired invitations.
+
+### Deployment and release evidence
+
+- [Staging deployment](docs/staging-deployment.md): executable Docker/Compose definitions, isolated services, additive index startup and rollback.
+- [Recovery runbook](docs/recovery-runbook.md): `npm run test:recovery` uses the local test MongoDB container for an isolated synthetic dump/restore and protected-journey/index checks. Build first with `npm run build`.
+- [Release gate](docs/release-gate.md): local verification versus blocked remote/provider/business checks. Live payments remain intentionally disabled.
+- [Live-testing inputs and checklist](docs/live-testing-checklist.md): keys, secrets, agency information and required end-to-end staging tests. Enter secrets through ignored files/secret management, never chat or Git.
+
+`NODE_ENV=production` can run test-mode Paystack only with explicit `DEPLOYMENT_STAGE=staging` and `PAYSTACK_ENVIRONMENT=test`; deployment preflight requires TLS MongoDB, HTTPS origin, private Cloudinary, Resend and the stable encryption key. Live keys are rejected. No remote resources have been provisioned or deployed by these changes.

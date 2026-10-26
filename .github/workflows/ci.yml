@@ -33,16 +33,29 @@ jobs:
         run: npm run db:test:up
       - name: Run the same integrated gate as local development
         run: npm run check
-      - name: Preserve browser failure evidence
-        if: failure()
+      - name: Verify isolated logical backup recovery
+        run: npm run test:recovery
+      - name: Preserve verification evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-failure-evidence
+          name: verification-evidence
+          include-hidden-files: true
           path: |
             playwright-report/
             test-results/
+            .cache/recovery-report.json
           if-no-files-found: ignore
           retention-days: 7
       - name: Stop test database
         if: always()
         run: docker compose --profile test stop mongodb-test
+
+  container:
+    needs: foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the deployable image without publishing
+        run: docker build -t psycocity:ci-${{ github.sha }} .

@@ -14,10 +14,13 @@ export function createCatalogueRouter(identity: IdentityService, storage: Privat
     const parsed = publicModelQuerySchema.safeParse(request.query); if (!parsed.success) {sendError(response, 400, "INVALID_REQUEST", "Check catalogue filters"); return;}
     const query = parsed.data; const candidates = await Draft.find({visible: true, publishedRevisionId: {$ne: null}, ...(query.cursor ? {_id: {$lt: new Types.ObjectId(query.cursor)}} : {})}).sort({_id: -1}).limit(101).select("memberId").lean();
     const items = []; let scanned = 0;
-    for (const candidate of candidates.slice(0,100)) {
-      scanned++; const value = await reader.read(String(candidate.memberId));
-      if (value && (!query.category || value.categories.includes(query.category)) && (!query.gender || value.gender === query.gender) && (query.minAge === undefined || value.age >= query.minAge) && (query.maxAge === undefined || value.age <= query.maxAge) && (query.minHeight === undefined || value.heightCm >= query.minHeight) && (query.maxHeight === undefined || value.heightCm <= query.maxHeight)) items.push(value);
-      if (items.length >= query.limit) break;
+    // Four independent authoritative projections at a time; never cache visibility or entitlement.
+    scan: for(let offset=0;offset<Math.min(candidates.length,100);offset+=4){
+      const batch=candidates.slice(offset,Math.min(offset+4,100));const values=await Promise.all(batch.map(candidate=>reader.read(String(candidate.memberId))));
+      for(const value of values){scanned++;
+        if (value && (!query.category || value.categories.includes(query.category)) && (!query.gender || value.gender === query.gender) && (query.minAge === undefined || value.age >= query.minAge) && (query.maxAge === undefined || value.age <= query.maxAge) && (query.minHeight === undefined || value.heightCm >= query.minHeight) && (query.maxHeight === undefined || value.heightCm <= query.maxHeight)) items.push(value);
+        if(items.length>=query.limit)break scan;
+      }
     }
     response.json({items, nextCursor: scanned < candidates.length ? String(candidates[scanned - 1]!._id) : null});
   });

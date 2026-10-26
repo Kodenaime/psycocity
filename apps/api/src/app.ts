@@ -1,3 +1,9 @@
+import { createContentRouters } from "./content/router.js";
+import { createAssignmentRouters } from "./academy/assignments.js";
+import { createProgressRouters } from "./academy/progress.js";
+import { createLearningRouters } from "./academy/learning.js";
+import { createTimetableRouters } from "./academy/timetable.js";
+import { createAcademyRouters } from "./academy/router.js";
 import { createEnquiryRouters } from "./enquiries/router.js";
 import { createCatalogueRouter } from "./members/catalogue.js";
 import { createPortfolioRouter } from "./members/portfolio.js";
@@ -24,12 +30,14 @@ import type { IdentityService, Identity } from "./identity/service.js";
 import { requestContext, sendError } from "./http.js";
 
 // Construction has no listener or process side effects, so tests use the real app.
-export function createApp({ isDatabaseReady = async () => false, identityService, mail, authConfig, storage, adminKey, checkoutProvider, verificationProvider }: { isDatabaseReady?: () => Promise<boolean>; identityService?: IdentityService; mail?: MailRuntime; authConfig?: AuthConfig; storage?: PrivateStorage | null; adminKey?: Buffer | null; checkoutProvider?: CheckoutProvider | null; verificationProvider?: VerificationProvider | null } = {}) {
+export function createApp({ isDatabaseReady = async () => false, identityService, mail, authConfig, storage, adminKey, checkoutProvider, verificationProvider, trustProxy = false }: { isDatabaseReady?: () => Promise<boolean>; identityService?: IdentityService; mail?: MailRuntime; authConfig?: AuthConfig; storage?: PrivateStorage | null; adminKey?: Buffer | null; checkoutProvider?: CheckoutProvider | null; verificationProvider?: VerificationProvider | null; trustProxy?: false | string[] } = {}) {
   const app = express();
   app.disable("x-powered-by");
+  app.set("trust proxy",trustProxy);
   app.use(requestContext);
+  if(authConfig?.production)app.use((_request,response,next)=>{response.set("Strict-Transport-Security","max-age=31536000");next();});
   app.use((_request, response, next) => {
-    response.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
+    response.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer", "Permissions-Policy":"camera=(), microphone=(), geolocation=()", "Content-Security-Policy":"frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" });
     next();
   });
   app.get("/api/v1/health", (request, response) => {
@@ -62,6 +70,7 @@ export function createApp({ isDatabaseReady = async () => false, identityService
   }
   if (identityService && authConfig) app.use("/api/v1/applications/:applicationId/offers", createOfferRouters(identityService, authConfig, mail ?? null).owner);
   if (identityService && authConfig) app.use("/api/v1/applications", createApplicationRouter(identityService, authConfig, mail ?? null));
+  if (identityService && authConfig) app.use("/api/v1/castings", createEventRouters(identityService, authConfig, mail ?? null, undefined, true).owner);
   if (identityService && authConfig) app.use("/api/v1/invitations", createEventRouters(identityService, authConfig, mail ?? null).owner);
   if (identityService && authConfig) app.use("/api/v1/media", createMediaRouter(identityService, authConfig, storage ?? null));
   if (identityService && authConfig) {
@@ -75,6 +84,12 @@ export function createApp({ isDatabaseReady = async () => false, identityService
   if (identityService && authConfig) app.use("/api/v1/payments", createPaymentRouter(identityService, authConfig, checkoutProvider ?? null));
   if (identityService) app.use("/api/v1/models", createCatalogueRouter(identityService, storage ?? null));
   if (identityService && authConfig) app.use("/api/v1/enquiries", createEnquiryRouters(identityService, authConfig).publicRouter);
+  if (identityService && authConfig) app.use("/api/v1/academy", createAssignmentRouters(identityService, authConfig).student);
+  if (identityService && authConfig) app.use("/api/v1/academy", createProgressRouters(identityService, authConfig).student);
+  if (identityService && authConfig) app.use("/api/v1/academy", createLearningRouters(identityService, authConfig).student);
+  if (identityService && authConfig) app.use("/api/v1/academy", createTimetableRouters(identityService, authConfig).student);
+  if (identityService && authConfig) app.use("/api/v1/academy", createAcademyRouters(identityService, authConfig).student);
+  if (identityService && authConfig) app.use("/api/v1/content", createContentRouters(identityService,authConfig).publicRouter);
   // Unknown API requests must never fall through to the web document.
   app.use("/api", (_request, response) => {
     sendError(response, 404, "NOT_FOUND", "API route not found");

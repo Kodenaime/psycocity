@@ -22,3 +22,7 @@ describe("real Express API", () => {
     expect(response.body).toEqual({ error: { code: "NOT_FOUND", message: "API route not found", requestId: response.headers["x-request-id"] } });
   });
 });
+
+it("sets restrictive framing, referrer and browser capability headers",async()=>{const response=await request(createApp()).get("/api/v1/health");expect(response.headers["content-security-policy"]).toContain("frame-ancestors 'none'");expect(response.headers["content-security-policy"]).toContain("object-src 'none'");expect(response.headers["permissions-policy"]).toContain("camera=()");expect(response.headers["referrer-policy"]).toBe("no-referrer");expect(response.headers["x-content-type-options"]).toBe("nosniff");});
+
+it("accepts forwarded client IPs only from configured proxy peers",async()=>{for(const [trustProxy,expected]of [[false,false],[["127.0.0.1","::1"],true]] as const){const app=createApp({trustProxy:trustProxy===false?false:[...trustProxy]});app.get("/peer",(req,res)=>res.json({ip:req.ip}));const response=await request(app).get("/peer").set("X-Forwarded-For","203.0.113.4");expect(response.body.ip==="203.0.113.4").toBe(expected);}});

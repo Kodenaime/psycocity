@@ -1,3 +1,9 @@
+import { createContentRouters } from "../content/router.js";
+import { createAssignmentRouters } from "../academy/assignments.js";
+import { createProgressRouters } from "../academy/progress.js";
+import { createLearningRouters } from "../academy/learning.js";
+import { createTimetableRouters } from "../academy/timetable.js";
+import { createAcademyRouters } from "../academy/router.js";
 import { createEnquiryRouters } from "../enquiries/router.js";
 import { createModerationRouter } from "../members/moderation.js";
 import { createMemberRouters } from "../members/router.js";
@@ -73,7 +79,14 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
   admin.use(createMemberRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/portfolios", createModerationRouter(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)));
   admin.use("/enquiries", createEnquiryRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use(createContentRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/cohorts", createAssignmentRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/cohorts", createProgressRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/cohorts", createLearningRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/cohorts", createTimetableRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
+  admin.use("/cohorts", createAcademyRouters(identity, config, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/payments", createAdminPaymentRouter(identity, config, mail, verificationProvider, (actor, session) => service!.authorize(actor, session, false)));
+  admin.use("/castings", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false), true).admin);
   admin.use("/events", createEventRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createOfferRouters(identity, config, mail, (actor, session) => service!.authorize(actor, session, false)).admin);
   admin.use("/applications", createReviewRouter(identity, mail, config, (actor, session) => service!.authorize(actor, session, false)));

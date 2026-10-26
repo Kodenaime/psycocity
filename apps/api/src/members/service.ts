@@ -1,3 +1,4 @@
+import { ageOn } from "@psycocity/validation";
 import type { ClientSession, Types } from "mongoose";
 import { finalApplicationSchema, type z, memberActivationSchema } from "@psycocity/validation";
 import { hashToken, newToken, type IdentityService, type Identity } from "../identity/service.js";
@@ -103,7 +104,7 @@ export function createMembershipService(identity: IdentityService, mail: MailRun
   }
   async function access(actor: Identity) {
     const records = await Member.find({userId: actor.userId}).sort({_id: -1}).limit(10); const memberships = [];
-    for (const member of records) {const entitlement = await Entitlement.findOne({_id: member.entitlementId, status: "activated"}).lean(); memberships.push({id: String(member._id), type: member.type, status: member.status, accessible: Boolean(member.status === "active" && actor.roles.includes(member.type) && entitlement && await eligible(entitlement.paymentId))});}
+    for (const member of records) {const entitlement = await Entitlement.findOne({_id: member.entitlementId, status: "activated"}).lean(); const proof=entitlement?await eligible(entitlement.paymentId):null; memberships.push({id: String(member._id), type: member.type, status: member.status, accessible: Boolean(member.status === "active" && actor.roles.includes(member.type) && proof)});if(member.type === "student" && member.representationApprovedAt)memberships.push({id:String(member._id),type:"model",status:member.status,accessible:Boolean(member.status==="active"&&actor.roles.includes("model")&&proof&&ageOn(proof.application.submittedSnapshot.answers.personal.birthDate)>=18)});}
     return {email: actor.email, memberships};
   }
   return {models, eligible, ensure, issue, revoke, status, activate, access, backfillOnce};

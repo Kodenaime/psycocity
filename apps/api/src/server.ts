@@ -1,3 +1,5 @@
+import { readTrustedProxies } from "./proxy.js";
+import { validateDeployment } from "./deployment.js";
 import { createVerificationProvider } from "./payments/verification-provider.js";
 import { createCheckoutProvider } from "./payments/provider.js";
 import express from "express";
@@ -16,7 +18,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 let config: ReturnType<typeof readConfig>;
-try { config = readConfig(process.env); }
+try { validateDeployment(process.env); config = readConfig(process.env); }
 catch (error) {
   console.error(error instanceof Error ? error.message : "Invalid API configuration");
   process.exit(1);
@@ -35,7 +37,7 @@ try {
   mail = await createMailRuntime(database.connection, process.env, config.mode);
   adminKey = config.mode === "production" && !process.env.OUTBOX_ENCRYPTION_KEY ? null : await loadOutboxKey(config.mode, process.env.OUTBOX_ENCRYPTION_KEY);
 } catch { console.error("Invalid authentication, email or checkout configuration"); process.exit(1); }
-const app = createApp({ isDatabaseReady: database.isReady, identityService, mail, authConfig, adminKey, checkoutProvider, verificationProvider, storage: createStorage(process.env, config.mode) });
+const app = createApp({ trustProxy:readTrustedProxies(process.env), isDatabaseReady: database.isReady, identityService, mail, authConfig, adminKey, checkoutProvider, verificationProvider, storage: createStorage(process.env, config.mode) });
 const production = config.mode === "production";
 const port = config.port;
 let stopping = false;

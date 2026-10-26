@@ -1,0 +1,3 @@
+import { isIP } from "node:net";
+/** Trust only explicitly listed proxy peers; direct forwarded headers stay untrusted. */
+export function readTrustedProxies(env:Record<string,string|undefined>):false|string[]{if(!env.TRUST_PROXY_CIDRS)return false;const entries=env.TRUST_PROXY_CIDRS.split(",").map(value=>value.trim());if(entries.length>10||entries.some(value=>{const [address,prefix,...extra]=value.split("/");const family=isIP(address??"");return !family||extra.length>0||prefix!==undefined&&(!/^\d+$/.test(prefix)||Number(prefix)<(family===4?8:32)||Number(prefix)>(family===4?32:128));}))throw new Error("TRUST_PROXY_CIDRS must list explicit trusted proxy IPs or narrow CIDRs; blanket trust is forbidden");return entries;}

@@ -1,0 +1,2 @@
+import { initialPublicCopy,publicCopySchema } from "@psycocity/validation";
+export async function loadPublicCopy(){const port=process.env.PORT??"3001";if(!/^\d+$/.test(port))throw new Response("Configuration unavailable",{status:503});try{const response=await fetch(`http://127.0.0.1:${port}/api/v1/content`,{signal:AbortSignal.timeout(5000)});if(!response.ok)return initialPublicCopy;return publicCopySchema.parse(await response.json());}catch{return initialPublicCopy;}}

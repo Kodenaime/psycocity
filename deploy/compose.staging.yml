@@ -1,0 +1,41 @@
+# Supply IMAGE as an immutable registry digest. TLS termination is managed separately.
+x-runtime: &runtime
+  image: ${IMAGE:?Set IMAGE to a reviewed immutable image digest}
+  env_file: ${STAGING_ENV_FILE:?Set STAGING_ENV_FILE to the private staging environment file}
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 20s
+services:
+  migrate:
+    <<: *runtime
+    command: [node, apps/api/dist/indexes.js]
+    restart: "no"
+    healthcheck:
+      disable: true
+  web:
+    <<: *runtime
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports: ["127.0.0.1:3001:3001"]
+  mail:
+    <<: *runtime
+    command: [node, apps/api/dist/mail/worker.js]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  payments:
+    <<: *runtime
+    command: [node, apps/api/dist/payments/worker.js]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

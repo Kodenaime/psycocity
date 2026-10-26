@@ -9,9 +9,9 @@ import { createMediaModel } from "../media/models.js";
 export function createPublicationReader(identity: IdentityService) {
   const connection = identity.models.User.db; const {Draft, Revision} = createProfileModels(connection); const {Member} = createMemberModels(connection); const guard = createMemberGuard(identity); const Media = createMediaModel(connection);
   async function proof(memberId: string, session?: ClientSession) {
-    const member = await Member.findOne({_id: memberId, type: "model", status: "active"}).session(session ?? null); if (!member) return null;
+    const member = await Member.findOne({_id: memberId, $or:[{type:"model"},{type:"student",representationApprovedAt:{$ne:null}}], status: "active"}).session(session ?? null); if (!member) return null;
     const user = await identity.models.User.findOne({_id: member.userId, status: "active", roles: "model"}).session(session ?? null); if (!user) return null;
-    const result = await guard({userId: String(user._id), roles: user.roles}, "model", session); return result ? {...result, user} : null;
+    const result = await guard({userId: String(user._id), roles: user.roles}, "model", session, memberId); return result ? {...result, user} : null;
   }
   async function read(memberId: string, preview = false) {
     const member = await proof(memberId); if (!member) return null;

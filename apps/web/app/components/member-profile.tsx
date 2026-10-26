@@ -8,7 +8,7 @@ import { Field } from "./field";
 import { Button, Notice } from "./ui";
 export function MemberProfile({type}: {type: "student" | "model"}) {
   const query = useQuery({queryKey: ["member", "profile", type], queryFn: ({signal}) => apiGet(`/member/${type}/profile`, privateMemberProfileResponseSchema, signal), refetchOnWindowFocus: false});
-  return <section className="prose-section"><h2>Private contact profile</h2>{query.isPending ? <Notice>Loading private details…</Notice> : query.isError ? <Notice error>{query.error.message}</Notice> : <PrivateForm key={query.data.version} profile={query.data} />}{type === "model" && <ProfessionalEditor />}</section>;
+  return <section className="prose-section"><h2>Private contact profile</h2>{query.isPending ? <Notice>Loading private details…</Notice> : query.isError ? <Notice error>{query.error.message}</Notice> : <PrivateForm key={`${query.data.memberId}:${query.data.version}`} profile={query.data} />}{type === "model" && <ProfessionalEditor />}</section>;
 }
 function PrivateForm({profile}: {profile: z.infer<typeof privateMemberProfileResponseSchema>}) {
   const client = useQueryClient(); const save = useMutation({mutationFn: (data: Record<string, unknown>) => apiPatch(`/member/${profile.type}/profile`, {version: profile.version, data}, messageSchema), onSuccess: async () => {await client.invalidateQueries({queryKey: ["member", "profile"]});}});
@@ -17,7 +17,7 @@ function PrivateForm({profile}: {profile: z.infer<typeof privateMemberProfileRes
 }
 export function ProfessionalEditor() {
   const query = useQuery({queryKey: ["member", "professional"], queryFn: ({signal}) => apiGet("/member/model/professional", professionalDraftResponseSchema, signal), refetchOnWindowFocus: false});
-  return <section className="prose-section"><h2>Professional profile draft</h2>{query.isPending ? <Notice>Loading professional draft…</Notice> : query.isError ? <Notice error>{query.error.message}</Notice> : <ProfessionalForm key={query.data.version} draft={query.data} />}</section>;
+  return <section className="prose-section"><h2>Professional profile draft</h2>{query.isPending ? <Notice>Loading professional draft…</Notice> : query.isError ? <Notice error>{query.error.message}</Notice> : <ProfessionalForm key={`${query.data.memberId}:${query.data.version}`} draft={query.data} />}</section>;
 }
 function ProfessionalForm({draft}: {draft: z.infer<typeof professionalDraftResponseSchema>}) {
   const client = useQueryClient(); const [saved, setSaved] = useState(false); const [dirty, setDirty] = useState(false); const [photos, setPhotos] = useState(draft.photos); const [coverId, setCoverId] = useState(draft.coverId); const save = useMutation({mutationFn: (data: Record<string, unknown>) => apiPatch("/member/model/professional", {version: draft.version, data, photos, coverId}, messageSchema), onSuccess: async () => {setSaved(true); await client.invalidateQueries({queryKey: ["member", "professional"]});}});

@@ -1,3 +1,4 @@
+import { validateDeployment } from "../deployment.js";
 import { createMembershipService } from "../members/service.js";
 import { readConfig } from "../config.js";
 import { createDatabase } from "../database.js";
@@ -8,6 +9,7 @@ import { readAuthConfig } from "../identity/config.js";
 import { createVerificationProvider } from "./verification-provider.js";
 import { createSettlementService } from "./settlement.js";
 import { createRefundService } from "./refunds.js";
+validateDeployment(process.env);
 const config = readConfig(process.env); const database = createDatabase(config.mongoUri); let stopping = false;
 for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => {stopping = true;});
 try {

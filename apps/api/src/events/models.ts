@@ -1,5 +1,6 @@
 import { Schema, type Connection } from "mongoose";
 const eventSchema = new Schema({
+  purpose: {type: String, enum: ["admission", "professional"], default: "admission", immutable: true},
   title: { type: String, required: true }, track: { type: String, enum: ["academy", "established"], required: true, immutable: true },
   description: { type: String, required: true }, instructions: String,
   mode: { type: String, enum: ["in_person", "online", "hybrid"], required: true }, venue: String, meetingUrl: String,
@@ -10,6 +11,7 @@ const eventSchema = new Schema({
 }, {timestamps: true, strict: "throw", versionKey: false});
 const invitationSchema = new Schema({
   eventId: { type: Schema.Types.ObjectId, required: true, immutable: true }, applicationId: { type: Schema.Types.ObjectId, required: true, immutable: true },
+  memberId: {type: Schema.Types.ObjectId, immutable: true},
   ownerId: { type: Schema.Types.ObjectId, required: true, immutable: true },
   startsAt: { type: Date, required: true }, endsAt: { type: Date, required: true },
   rsvp: { type: String, enum: ["pending", "confirmed", "declined"], default: "pending", required: true },
@@ -19,6 +21,8 @@ const invitationSchema = new Schema({
   version: { type: Number, default: 0, required: true }, eventVersion: { type: Number, default: 0, required: true },
 }, {timestamps: true, strict: "throw", versionKey: false});
 invitationSchema.index({eventId: 1, applicationId: 1}, {unique: true});
+eventSchema.index({purpose: 1, _id: -1});
+invitationSchema.index({memberId: 1, _id: -1});
 invitationSchema.index({ownerId: 1, _id: -1});
 invitationSchema.index({applicationId: 1, status: 1});
 export function createEventModels(connection: Connection) {

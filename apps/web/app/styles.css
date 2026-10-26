@@ -184,3 +184,22 @@ td .button { white-space: nowrap; }
 .model-card h2 { margin-bottom: .3rem; }
 .model-hero { width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
 .spam-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Shared portal forms retain the editorial spacing of the public site. */
+.panel { margin-block: 2.5rem; padding-block: 2rem; border-top: 1px solid #d8d3c8; }
+.panel article { padding-block: 1.5rem; border-bottom: 1px solid #d8d3c8; }
+.form-stack, .panel form { display: grid; gap: 1.25rem; margin-block: 1.5rem; max-width: 52rem; }
+form fieldset { min-width: 0; border: 1px solid #d8d3c8; padding: 1.25rem; }
+form legend { font-size: .85rem; font-weight: 600; padding-inline: .5rem; }
+form label:has(> input:not([type="checkbox"])), form label:has(> select), form label:has(> textarea) { display: block; font-size: .85rem; font-weight: 600; margin-block: 1rem; }
+label > input:not([type="checkbox"]):not([type="radio"]), label > select, label > textarea { display: block; width: 100%; min-height: 48px; margin-top: .5rem; border: 1px solid #8b8679; border-radius: 0; padding: .8rem 1rem; background: #fffdf8; color: #191919; }
+label > textarea { min-height: 7rem; resize: vertical; }
+.panel .button { margin: .35rem .5rem .35rem 0; }
+.panel ol > li, .panel ul > li { padding-block: .75rem; overflow-wrap: anywhere; }
+.certificate { background: #fffdf8; border: 1px solid #8b8679; padding: 2rem; margin-block: 1.5rem; }
+@media print {
+  body * { visibility: hidden; }
+  .certificate[data-print], .certificate[data-print] * { visibility: visible; }
+  .certificate[data-print] { position: absolute; inset: 0; margin: 0; padding: 2cm; border: 0; }
+  .certificate[data-print] button { display: none; }
+}
