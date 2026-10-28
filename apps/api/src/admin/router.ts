@@ -1,3 +1,4 @@
+import { setTrustedDevice,readTrustedDevice } from "../identity/trusted-device.js";
 import { createContentRouters } from "../content/router.js";
 import { createAssignmentRouters } from "../academy/assignments.js";
 import { createProgressRouters } from "../academy/progress.js";
@@ -14,6 +15,7 @@ import { createEventRouters } from "../events/router.js";
 import express from "express";
 import { createReviewRouter } from "./review.js";
 import { Types } from "mongoose";
+import {hashToken} from "../identity/service.js";
 import { mfaCodeSchema, pageQuerySchema, staffActivationSchema, staffInviteSchema } from "@psycocity/validation";
 import type { Identity, IdentityService } from "../identity/service.js";
 import type { AuthConfig } from "../identity/config.js";
@@ -21,7 +23,7 @@ import type { MailRuntime } from "../identity/auth-service.js";
 import { requireIdentity } from "../identity/middleware.js";
 import { requireCsrf, sameOriginJson } from "../identity/security.js";
 import { createRateLimiter, createRateLimitModel } from "../identity/rate-limit.js";
-import { setSessionCookies } from "../identity/cookies.js";
+import { setSessionCookies,clearSessionCookies } from "../identity/cookies.js";
 import { sendError } from "../http.js";
 import { createApplicationModels } from "../applications/models.js";
 import { createAdminModels } from "./models.js";
@@ -43,7 +45,7 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
       setSessionCookies(response, session, config.production);
       response.set("Cache-Control", "no-store").json({ message: "Staff invitation accepted. Complete authenticator verification." });
     } catch (error) {
-      if (error instanceof AdminActionError) { sendError(response, error.code === "MFA_REQUIRED" ? 403 : 409, error.code, error.message); return; }
+      if (error instanceof AdminActionError) { sendError(response, error.code === "CONFLICT" ? 409 : 403, error.code, error.message); return; }
       throw error;
     }
   });
@@ -70,8 +72,10 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
     const result = await service!.verifyMfa(actor, input.data.method, input.data.code);
     if (!result) { sendError(response, 400, "INVALID_REQUEST", "The security code is invalid, expired or already used. Use a fresh code."); return; }
     setSessionCookies(response, result.session, config.production);
+    setTrustedDevice(response,result.device,config.production);
     response.json({ message: "Staff security verified", ...(result.recoveryCodes ? { recoveryCodes: result.recoveryCodes } : {}) });
   });
+  admin.post("/mfa/forget-device",sameOriginJson(config.origin),requireCsrf,express.json({limit:"1kb"}),async(request,response)=>{const actor=response.locals.identity as Identity;const token=readTrustedDevice(request.get("Cookie"));if(token&&/^[0-9a-f]{64}$/.test(token))await identity.models.TrustedDevice.updateOne({tokenHash:hashToken(token),userId:actor.userId},{$set:{revokedAt:new Date()}});await identity.revokeOwnedSession(actor.userId,actor.sessionId);clearSessionCookies(response,config.production);setTrustedDevice(response,{token:"",expiresAt:new Date(0)},config.production);response.json({message:"Browser trust removed. Sign in and verify a code again."});});
   admin.use((_request, response, next) => {
     if (!(response.locals.identity as Identity).mfaVerified) { sendError(response, 403, "MFA_REQUIRED", "Complete staff security verification"); return; }
     next();
@@ -98,14 +102,14 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
       identity.models.User.countDocuments({ roles: "admin", status: "active", staffStatus: { $ne: "deactivated" }, mfaEnabledAt: { $ne: null } }),
     ]);
     const actor = response.locals.identity as Identity;
-    response.json({ userId: actor.userId, email: actor.email, activeStaff, pendingInvitations, awaitingApplications, securedStaff });
+    response.json({ userId: actor.userId, email: actor.email, activeStaff, pendingInvitations, awaitingApplications, securedStaff, isSuperAdmin:Boolean(actor.isSuperAdmin) });
   });
   admin.get("/staff", async (request, response) => {
     const query = pageQuerySchema.safeParse(request.query);
     if (!query.success) { sendError(response, 400, "INVALID_REQUEST", "Check pagination parameters"); return; }
-    const rows = await identity.models.User.find({ roles: "admin", ...(query.data.cursor ? { _id: { $lt: new Types.ObjectId(query.data.cursor) } } : {}) }).sort({ _id: -1 }).limit(query.data.limit + 1).select("emailNormalized status staffStatus mfaEnabledAt").lean();
+    const rows = await identity.models.User.find({ roles: "admin", ...(query.data.cursor ? { _id: { $lt: new Types.ObjectId(query.data.cursor) } } : {}) }).sort({ _id: -1 }).limit(query.data.limit + 1).select("emailNormalized status staffStatus mfaEnabledAt isSuperAdmin").lean();
     const page = rows.slice(0, query.data.limit);
-    response.json({ items: page.map(value => ({ id: String(value._id), email: value.emailNormalized, active: value.status === "active" && value.staffStatus !== "deactivated", mfaEnabled: Boolean(value.mfaEnabledAt) })), nextCursor: rows.length > query.data.limit ? String(page.at(-1)!._id) : null });
+    response.json({ items: page.map(value => ({ id: String(value._id), email: value.emailNormalized, active: value.status === "active" && value.staffStatus !== "deactivated", mfaEnabled: Boolean(value.mfaEnabledAt), isSuperAdmin:Boolean(value.isSuperAdmin) })), nextCursor: rows.length > query.data.limit ? String(page.at(-1)!._id) : null });
   });
   admin.get("/invitations", async (request, response) => {
     const query = pageQuerySchema.safeParse(request.query);
@@ -125,7 +129,7 @@ export function createAdminRouters(identity: IdentityService, mail: MailRuntime,
   function action(handler: express.RequestHandler): express.RequestHandler {
     return async (request, response, next) => {
       try { await handler(request, response, next); }
-      catch (error) { if (error instanceof AdminActionError) { sendError(response, error.code === "MFA_REQUIRED" ? 403 : 409, error.code, error.message); return; } throw error; }
+      catch (error) { if (error instanceof AdminActionError) { sendError(response, error.code === "CONFLICT" ? 409 : 403, error.code, error.message); return; } throw error; }
     };
   }
   admin.post("/invitations", action(async (request, response) => {

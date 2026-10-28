@@ -1,3 +1,4 @@
+import { readTrustedDevice } from "./trusted-device.js";
 import express from "express";
 import { parse } from "cookie";
 import { timingSafeEqual } from "node:crypto";
@@ -58,7 +59,7 @@ export function createAuthRouter(identity: IdentityService, mail: MailRuntime, c
   }));
   router.post("/login", action("login", loginSchema, async (input, request, response) => {
     if (!(await limit("login:identifier", input.identifier, 10))) { sendError(response, 429, "RATE_LIMITED", "Please wait before trying again"); return; }
-    const session = await auth.login(input.identifier, input.password);
+    const session = await auth.login(input.identifier, input.password, readTrustedDevice(request.get("Cookie")));
     if (!session) { sendError(response, 401, "UNAUTHORIZED", "The sign-in details could not be verified"); return; }
     const old = await identity.authenticate(parse(request.headers.cookie ?? "")[sessionCookieName]);
     if (old) await identity.revokeOwnedSession(old.userId, old.sessionId);

@@ -35,7 +35,7 @@ export async function submittedApplicant(request: APIRequestContext, track: "aca
     expect((await request.put(grant.uploadUrl, {headers: {...headers, "X-Upload-Token": grant.uploadToken, "Content-Type": "image/png"}, data: picture})).status()).toBe(200);
   }
   expect((await request.post(`/api/v1/applications/${id}/submit`, {headers, data: {version: 1, declarations: {accuracy: true, termsAccepted: true, privacyAccepted: true, termsVersion: applicationTermsVersion, privacyVersion: applicationPrivacyVersion}}})).status()).toBe(200);
-  return {id, email, password, name: data.personal.legalName};
+  return {id, email, password, session, name: data.personal.legalName};
 }
 
 export async function settledPayment(request: APIRequestContext, track: "academy" | "established" = "academy") {
@@ -69,3 +69,4 @@ export async function invitedMember(request: APIRequestContext, track: "academy"
   } finally {await database.close();}
   return payer;
 }
+export async function draftApplicant(request:APIRequestContext){const uri=process.env.TEST_MONGODB_URI;if(!uri||!/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri))throw new Error("Dedicated E2E database required");const database=createDatabase(uri);let session;const email=`draft-responsive-${randomUUID()}@example.test`;try{await database.connect();const identity=createIdentityService(createIdentityModels(database.connection));const user=await identity.models.User.create({emailNormalized:email,passwordHash:await hashPassword("responsive draft browser passphrase"),roles:["applicant"],emailVerifiedAt:new Date()});session=await identity.issueSession(String(user._id));}finally{await database.close();}const headers={Origin:"http://127.0.0.1:3101","X-Requested-With":"Psycocity",Cookie:`psycocity_session=${session.token}`,"X-CSRF-Token":session.csrfToken};const created=await request.post("/api/v1/applications",{headers,data:{track:"academy"}});expect(created.status()).toBe(201);return{id:(await created.json()).id as string,session,email};}

@@ -1,3 +1,5 @@
+import {createIdentityService} from "../../apps/api/src/identity/service.js";
+import type {Page} from "@playwright/test";
 import sharp from "sharp";
 import { createDatabase } from "../../apps/api/src/database.js";
 import { createIdentityModels } from "../../apps/api/src/identity/models.js";
@@ -77,6 +79,8 @@ test("resets a password through delivered mail and rejects the old session", asy
   await expect(page).toHaveURL(/\/applicant\/dashboard/);
 });
 
+async function verifiedFeatureSession(page:Page,email:string){const uri=process.env.TEST_MONGODB_URI;if(!uri||!/^mongodb(?:\+srv)?:\/\/[^/]+\/[^/?]*_test(?:\?|$)/.test(uri))throw new Error("Owned test database required");const database=createDatabase(uri);try{await database.connect();const identity=createIdentityService(createIdentityModels(database.connection));const user=(await identity.models.User.findOne({emailNormalized:email,emailVerifiedAt:{$ne:null},roles:"applicant"}).lean())!;expect(user).toBeTruthy();const session=await identity.issueSession(String(user._id));await page.context().addCookies([{name:"psycocity_session",value:session.token,url:"http://127.0.0.1:3101",httpOnly:true,sameSite:"Lax"},{name:"psycocity_csrf",value:session.csrfToken,url:"http://127.0.0.1:3101",sameSite:"Lax"}]);}finally{await database.close();}await page.goto("/applicant/dashboard");}
+
 test("saves and resumes separate track drafts through the application wizard", async ({ page, request }) => {
   const email = `draft-${randomUUID()}@example.test`;
   const password = "a unique application passphrase";
@@ -84,10 +88,7 @@ test("saves and resumes separate track drafts through the application wizard", a
   expect((await request.post("/api/v1/auth/register", { headers, data: { email, password } })).status()).toBe(202);
   const link = new URL(await mailLink(email, "Verify"));
   expect((await request.post("/api/v1/auth/verify-email", { headers, data: { token: link.searchParams.get("token") } })).status()).toBe(200);
-  await page.goto("/applicant/login");
-  await page.getByLabel("Email or username").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await verifiedFeatureSession(page,email);
   await page.getByRole("button", { name: "Start academy draft" }).click();
   await expect(page).toHaveURL(/\/applicant\/application\/[0-9a-f]{24}$/);
   const academyURL = page.url();
@@ -99,10 +100,10 @@ test("saves and resumes separate track drafts through the application wizard", a
   await page.reload();
   await expect(page.getByLabel("Legal name", { exact: true })).toHaveValue("Sample Applicant");
   await page.getByRole("button", { name: "3. Your professional statistics" }).click();
-  await page.getByLabel("Height (cm)", { exact: true }).fill("175");
+  await page.getByLabel("Height unit", {exact:true}).selectOption("cm"); await page.getByLabel("Height (cm)", { exact: true }).fill("175");
   await page.getByLabel("Waist (cm)", { exact: true }).fill("70");
   await page.getByRole("button", { name: "Save and continue" }).click();
-  await expect(page.getByRole("heading", { level: 2 })).toHaveText("Your experience and perspective");
+  await expect(page.locator("h2[tabindex='-1']")).toHaveText("Your experience and perspective");
   await page.getByRole("button", { name: "6. Photographs", exact: true }).click();
   const picture = await sharp({ create: { width: 320, height: 480, channels: 3, background: "#e7db9d" } }).png().toBuffer();
   await page.getByLabel("Upload headshot", { exact: true }).setInputFiles({ name: "synthetic-headshot.png", mimeType: "image/png", buffer: picture });
@@ -130,9 +131,7 @@ test("requires a minor’s guardian consent and honors withdrawal", async ({ pag
   await request.post("/api/v1/auth/register", { headers, data: { email, password } });
   const verification = new URL(await mailLink(email, "Verify"));
   await request.post("/api/v1/auth/verify-email", { headers, data: { token: verification.searchParams.get("token") } });
-  await page.goto("/applicant/login");
-  await page.getByLabel("Email or username").fill(email); await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await verifiedFeatureSession(page,email);
   await page.getByRole("button", { name: "Start academy draft" }).click();
   await expect(page).toHaveURL(/\/applicant\/application\/[0-9a-f]{24}$/);
   const applicationURL = page.url();
@@ -176,7 +175,7 @@ for (const track of ["academy", "established"] as const) test(`submits a complet
   await page.getByRole("button", { name: "Save and continue" }).click();
   await page.getByLabel("Country", { exact: true }).selectOption("Nigeria"); await page.getByLabel("State or FCT").selectOption("Lagos"); await page.getByLabel("City", { exact: true }).fill("Ikeja");
   await page.getByRole("button", { name: "Save and continue" }).click();
-  await page.getByLabel("Height (cm)", { exact: true }).fill("175"); await page.getByLabel("Shoe size", { exact: true }).fill("40"); await page.getByLabel("Shoe sizing system").selectOption("EU");
+  await page.getByLabel("Height unit", {exact:true}).selectOption("cm"); await page.getByLabel("Height (cm)", { exact: true }).fill("175"); await page.getByLabel(/^Shoe size \(/).fill("40"); await page.getByLabel("Shoe sizing system").selectOption("EU");
   await page.getByRole("button", { name: "Save and continue" }).click();
   await page.getByLabel("Tell us about yourself").fill("I am ready to develop my modelling craft and professional confidence."); await page.getByLabel("Modelling experience").fill("I have worked on independent fashion projects."); await page.getByLabel("Modelling interests").fill("Editorial and runway"); await page.getByLabel("Availability", { exact: true }).fill("Weekends");
   await page.getByRole("button", { name: "Save and continue" }).click();

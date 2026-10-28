@@ -1,10 +1,10 @@
 # Psycocity — Product and Technical Specification
 
-Version: 2.0
+Version: 2.1
 
 Status: implementation baseline
 
-Updated: 25 October 2026
+Updated: 28 October 2026
 
 ## 1. Product purpose
 
@@ -26,7 +26,7 @@ The experience should communicate premium fashion through photography, editorial
 - Academy delivery is hybrid: online and in-person.
 - Approved agency models have public listing and detail pages.
 - Admins approve public profile changes and photographs.
-- Multiple staff administrators have identical operational permissions and individual accounts.
+- Multiple administrators share agency operational permissions and individual accounts. Only the original seeded super admin may invite or remove administrator access.
 - Notifications use email initially.
 - The public site includes booking enquiries.
 
@@ -46,7 +46,8 @@ Do not introduce client accounts, automated model bookings, client payments, mod
 | Applicant | Own application, draft uploads, assessment invitations, decisions, accepted-offer payment, receipts |
 | Academy student | Own private member profile, cohort, lessons, resources, attendance, assignments and progress as released |
 | Agency model | Own private details, portfolio drafts, published profile preview, casting invitations |
-| Administrator | All operational administration, staff invitations, application decisions, payments, content, academy, models, enquiries, audit records |
+| Administrator | Application decisions, payments, content, academy, models, enquiries and audit records; cannot invite or remove staff |
+| Original super admin | All administrator operations plus staff invitations, revocation and removal of other administrators |
 
 An individual may have applicant and member permissions. Keep application records separate from member profiles. A shared identity service may link them after verified invitation redemption; applicant credentials alone never grant member access. Member registration must explicitly consume a valid invitation. Avoid duplicate identities when the invited email already belongs to an applicant.
 
@@ -244,7 +245,7 @@ Event types: academy admission assessment, established-model admission casting, 
 
 Fields: title, type, description, audience, location/meeting link, schedule, capacity, instructions, organizer, status. Individual invitations track assigned slot, RSVP, attendance, and outcome.
 
-Initially use staff-assigned slots with conflict/capacity validation. Invitees can confirm or decline; staff can reschedule and cancel with email notifications. Applicant events appear in applicant access; professional castings appear in model access. Private casting details are not public by default.
+Use staff-assigned slots with conflict/capacity validation. Selecting an admission event copies its start/finish to editable slot controls. Invitees can confirm, decline or request a reschedule with a reason and proposed time. Staff see requests, reassign and email a fresh confirmation request. Staff can reschedule and cancel with email notifications. Applicant events appear in applicant access; professional castings appear in model access. Private casting details are not public by default.
 
 ## 12. Booking and contact enquiries
 
@@ -258,7 +259,7 @@ General contact enquiries use a smaller form and the same reliable notification 
 
 ## 13. Administration
 
-All staff have the same operational permission set. Use separate accounts, invitation-only staff registration, and mandatory multifactor authentication. Bootstrap the first admin using a secure one-time deployment procedure, never a public registration endpoint or committed password.
+All staff share agency operational permissions. Only the original bootstrap administrator is the super admin and may invite, revoke invitations or deactivate other administrators. Invited staff never become super admins. Keep separate accounts, invitation-only staff registration and mandatory multifactor authentication. Bootstrap the first admin using a secure one-time deployment procedure, never a public registration endpoint or committed password.
 
 Admin capabilities:
 
@@ -271,7 +272,7 @@ Admin capabilities:
 - Operate academy cohorts, resources, schedules and progress.
 - Process enquiries and internal notes.
 - Edit structured public copy, FAQs and contact details; do not allow arbitrary executable HTML.
-- Invite/deactivate staff and review audit history. Prevent removal of the last active administrator.
+- Super admin alone invites/deactivates staff; all administrators can review audit history. Protect the original super admin from removal. Deactivation revokes administrative sessions and browser trust while preserving audit history.
 - View email-delivery failures and retry appropriate messages.
 
 Require confirmation and, where appropriate, recent authentication for financial, staff-access, and destructive actions. Operational staff cannot edit or delete audit history.
@@ -620,11 +621,12 @@ MongoDB uses collections, not SQL tables. The tables below define document contr
 
 | Collection | Main fields and types | Constraints/indexes |
 | --- | --- | --- |
-| users | emailNormalized:string, usernameNormalized?:string, passwordHash:string, roles:enum[], emailVerifiedAt?:Date, status:enum, mfaEncryptedSecret?:string | Unique email; partial unique username; roles assigned by server |
+| users | emailNormalized:string, usernameNormalized?:string, passwordHash:string, roles:enum[], isSuperAdmin:boolean, applicationBlockedUntil?:Date, applicationRevision:number, emailVerifiedAt?:Date, status:enum, mfaEncryptedSecret?:string | Unique email; partial unique username and single true super-admin flag; roles assigned by server |
 | sessions | userId:ObjectId, tokenHash:string, expiresAt:Date, revokedAt?:Date | Unique token hash; expiry TTL; expiry also checked in code |
+| staffTrustedDevices | userId:ObjectId, tokenHash:string, credentialsVersion:number, mfaVerifiedAt:Date, expiresAt:Date, revokedAt?:Date | Unique hash; expiry TTL and query checks; account/credential scoped |
 | authTokens | userId?:ObjectId, purpose:enum, tokenHash:string, expiresAt:Date, consumedAt?:Date | Unique hash; purpose-specific validation; TTL cleanup |
 | applicantProfiles | userId:ObjectId, legalName:string, preferredName?:string, birthDate:date-only string, phone:string, location:object | Unique user; private projection |
-| applications | applicantId:ObjectId, track:enum, answers:object, mediaIds:ObjectId[], status:enum, submittedSnapshot?:object, submittedAt?:Date, active:boolean | Applicant/track lookup; partial unique active applicant+track; status+submittedAt index |
+| applications | applicantId:ObjectId, track:enum, answers:object, mediaIds:ObjectId[], status:enum, submittedSnapshot?:object, submittedAt?:Date, reapplyAfter?:Date, active:boolean | Applicant/track lookup; partial unique active applicant+track; status+submittedAt index |
 | applicationTransitions | applicationId:ObjectId, from:string, to:string, actorId:ObjectId, reason?:string, applicationVersion:number | Application+createdAt; append-only |
 | consentRecords | applicationId:ObjectId, subjectId:ObjectId, guardianEmail?:string, guardianName?:string, relationship?:string, purpose:string, policyVersion:string, verifiedAt?:Date, consentedAt:Date, withdrawnAt?:Date | Application+purpose; immutable consent evidence; restricted access |
 | admissionOffers | applicationId:ObjectId, amountKobo:number, currency:NGN, expiresAt:Date, termsVersion:string, status:enum, active:boolean | Partial unique active offer per application; immutable amount snapshot |
@@ -668,6 +670,7 @@ Date-only birth dates avoid timezone shifts; age calculations use the agreed bus
 ```mermaid
 erDiagram
   USER ||--o{ SESSION : authenticates
+  USER ||--o{ STAFF_TRUSTED_DEVICE : trusts
   USER ||--o| APPLICANT_PROFILE : has
   APPLICANT_PROFILE ||--o{ APPLICATION : submits
   APPLICATION ||--o{ CONSENT_RECORD : requires
@@ -818,3 +821,35 @@ For every chunk:
 Split a chunk further when it introduces multiple unrelated domain transitions, cannot be reviewed coherently, or requires unavailable external decisions. Prefer splitting at the listed numbered steps; keep public exposure disabled until necessary controls are complete. Combine only tightly coupled implementation pieces whose separate delivery would produce misleading or unsafe behavior.
 
 Recommended first implementation task: **B01 — Runtime and workspace**. It should create a reproducible project skeleton without implementing payments, forms, database features or placeholder business logic prematurely.
+
+
+## 31. Portal workflow refinement — 28 October 2026
+
+These requirements supersede earlier generic wording about equal staff access and reapplication policy.
+
+### Staff dashboard and security
+
+- Use a dedicated administrative shell with a persistent desktop sidebar, active navigation, account controls and a collapsible mobile drawer. Retain individual permission checks on every API operation.
+- Require an authenticator/recovery code on first use of a browser, after seven days, or after browser trust is revoked. A successful challenge grants that browser seven days of fixed-duration trust. Email/password are always required for a new sign-in; do not store an authentication code or a password in the browser.
+- Store an opaque proof in an HttpOnly, SameSite cookie (Secure in production), with only its hash, credential version and expiry on the server. Retain the original verification timestamp: password login never refreshes MFA age. Sensitive staff roster changes still require verification within 15 minutes.
+- Signing out ends the session but preserves browser trust. **Forget this browser**, password reset and staff deactivation revoke the applicable grants. Never trust a proof for another account.
+- Exactly one original bootstrap administrator is super admin. Upgrade an existing installation using its oldest consumed bootstrap invitation as evidence; never guess from ordinary account creation order. A unique partial database index prevents a second super admin. There is no ordinary promotion endpoint.
+
+### Application entry and export
+
+- Keep visible labels and concise sample placeholders. Default body measurements to cm, height entry to feet/inches, and shoes to UK. Let applicants explicitly choose cm or a different supported shoe system. Store height in canonical centimetres; never reinterpret existing EU/US sizes.
+- Provide **Download application PDF** and **Print application**, with an explicit optional picture checkbox (off initially). Use saved draft data or the submitted snapshot, only the owner's application photographs, and no private staff notes. Apply private/no-store headers, ownership checks and export limits. Guardian/consent holds prevent photo export. Printing opens the real PDF in the browser's PDF viewer.
+
+### Appointment to decision
+
+1. Staff starts review, selects an admission event, edits the copied slot if necessary and assigns it. The applicant receives email and sees the invitation in their portal.
+2. The applicant confirms, declines or requests a different time with reason and proposal. A reschedule request releases/declines the old slot; it does not promise the proposed slot.
+3. Staff filters the appointment action centre by pending responses, confirmed/upcoming, reschedule requests or confirmed/finished appointments. Reassignment checks capacity/overlaps and requires a fresh applicant confirmation.
+4. After a confirmed admission appointment ends, staff records attendance and an applicant-visible assessment note. This changes the application to assessed; it does not itself accept or collect payment.
+5. Staff opens the assessed application to accept with a visible note and the exact track offer (academy ₦50,000; established ₦30,000), waitlist without payment, or reject with a visible note and reapplication date.
+6. Rejection defaults to a 30-day wait. Staff may choose 1–365 days for that decision. Enforce the latest account-level date across both tracks, at draft creation and submission; existing drafts cannot bypass it. Preserve historical applications. Do not revoke unrelated accepted offers or paid memberships.
+7. Accepted applicants see payment as their next step; verified settlement still governs the unique membership invitation. No change to payment verification or public portfolio approval.
+
+### Motion and responsive acceptance
+
+Use GSAP for public editorial text/section reveals and Framer Motion for restrained button feedback. Keep content readable during reveals, clean up route effects and respect reduced-motion preferences. Avoid animating private form entry. Test public, applicant and administrative layouts at 360, 480, 720, 1024 and 1444 pixels, including sidebar access, horizontal overflow and usable form controls. Automated accessibility scans complement these checks; native printers and physical-device coverage require separate manual validation.

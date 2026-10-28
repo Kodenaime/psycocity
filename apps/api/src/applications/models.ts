@@ -10,6 +10,7 @@ const applicationSchema = new Schema({
   active: { type: Boolean, required: true, default: true },
   version: { type: Number, required: true, default: 0 },
   correctionFields: { type: [String], enum: correctionPaths, default: [] }, correctionMessage: String, reviewRevision: { type: Number, default: 0 },
+  reapplyAfter:Date,
   submittedAt: Date, withdrawnAt: Date, submittedSnapshot: Schema.Types.Mixed,
   consentHold: { type: Boolean, required: true, default: false },
   eligibilityRevision: { type: Number, required: true, default: 0 },

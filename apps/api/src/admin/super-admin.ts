@@ -1,0 +1,5 @@
+import type { Connection } from "mongoose";
+import { createIdentityModels } from "../identity/models.js";
+import { createAdminModels } from "./models.js";
+/** Promote only the identity proven by the original consumed bootstrap invitation. */
+export async function migrateFirstSuperAdmin(connection:Connection){const {User}=createIdentityModels(connection);const {Invite,Setting,Audit}=createAdminModels(connection);await connection.transaction(async session=>{await Setting.updateOne({key:"admin-roster"},{$inc:{version:1}},{upsert:true,session});if(await User.exists({isSuperAdmin:true}).session(session))return;const invitation=await Invite.findOne({source:"bootstrap",status:"used"}).sort({createdAt:1}).session(session);if(!invitation)return;const user=await User.findOne({emailNormalized:invitation.email,roles:"admin",staffStatus:{$ne:"deactivated"}}).session(session);if(!user)return;await User.updateOne({_id:user._id},{$set:{isSuperAdmin:true}},{session});await Audit.create([{actorId:user._id,action:"staff.original_bootstrap_promoted",entityId:user._id}],{session});});}

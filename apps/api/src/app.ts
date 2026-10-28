@@ -1,3 +1,4 @@
+import { createApplicationExports } from "./applications/export.js";
 import { createContentRouters } from "./content/router.js";
 import { createAssignmentRouters } from "./academy/assignments.js";
 import { createProgressRouters } from "./academy/progress.js";
@@ -69,6 +70,7 @@ export function createApp({ isDatabaseReady = async () => false, identityService
     app.use("/api/v1/guardian", guardian.publicRouter);
   }
   if (identityService && authConfig) app.use("/api/v1/applications/:applicationId/offers", createOfferRouters(identityService, authConfig, mail ?? null).owner);
+  if (identityService) app.use("/api/v1/applications",createApplicationExports(identityService,storage??null));
   if (identityService && authConfig) app.use("/api/v1/applications", createApplicationRouter(identityService, authConfig, mail ?? null));
   if (identityService && authConfig) app.use("/api/v1/castings", createEventRouters(identityService, authConfig, mail ?? null, undefined, true).owner);
   if (identityService && authConfig) app.use("/api/v1/invitations", createEventRouters(identityService, authConfig, mail ?? null).owner);

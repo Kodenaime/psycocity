@@ -1,3 +1,4 @@
+import { migrateFirstSuperAdmin } from "./admin/super-admin.js";
 import { initializeContent } from "./content/models.js";
 import { createAcademyModels } from "./academy/models.js";
 import { createEnquiryModels } from "./enquiries/models.js";
@@ -29,6 +30,8 @@ try {
   await createRefundModel(database.connection).createIndexes();
   for (const model of Object.values(createFinancialModels(database.connection))) await model.createIndexes();
   await createOfferModel(database.connection).createIndexes();
+  for (const model of Object.values(createAdminModels(database.connection))) await model.createIndexes();
+  await migrateFirstSuperAdmin(database.connection);
   await ensureIdentityIndexes(createIdentityModels(database.connection));
   await createOutboxModel(database.connection).createIndexes();
   await createRateLimitModel(database.connection).createIndexes();

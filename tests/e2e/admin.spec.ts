@@ -14,10 +14,13 @@ async function seedInitialStaff(email: string, password: string, pendingSession 
   try {
     await database.connect();
     const models = createIdentityModels(database.connection);
-    const user = await models.User.create({ emailNormalized: email, passwordHash: await hashPassword(password), roles: ["admin"], staffStatus: "active", emailVerifiedAt: new Date() });
+    let user;
+    if(!pendingSession){user=await models.User.findOne({isSuperAdmin:true});if(user){await models.User.updateOne({_id:user._id},{$set:{emailNormalized:email,passwordHash:await hashPassword(password),staffStatus:"active",status:"active"},$inc:{credentialsVersion:1},$unset:{mfaEnabledAt:1,mfaSecretEncrypted:1,pendingMfaSecretEncrypted:1,lastTotpCounter:1},$setOnInsert:{} });await models.User.updateOne({_id:user._id},{$set:{mfaRecoveryHashes:[]}});}else user=await models.User.create({emailNormalized:email,passwordHash:await hashPassword(password),roles:["admin"],isSuperAdmin:true,staffStatus:"active",emailVerifiedAt:new Date()});}
+    else user=await models.User.create({emailNormalized:email,passwordHash:await hashPassword(password),roles:["admin"],staffStatus:"active",emailVerifiedAt:new Date()});
     if (pendingSession) return await createIdentityService(models).issueSession(String(user._id));
   } finally { await database.close(); }
 }
+async function adminNavigate(page:Page,name:string){const menu=page.getByRole("button",{name:"Open navigation",exact:true});if(await menu.isVisible())await menu.click();await page.getByRole("link",{name:name==="Appointments"?"Appointments & decisions":name,exact:true}).click();}
 async function enroll(page: Page) {
   await page.getByRole("button", { name: "Set up authenticator", exact: true }).click();
   const secret = (await page.getByTestId("mfa-setup-key").textContent())!.trim();
@@ -42,7 +45,7 @@ async function fixtureStaffSession(page: Page, email: string, password: string) 
 }
 test.afterEach(cleanupMailFixtures);
 
-test("enforces staff MFA, invitations, equal access, revocation and audited recovery", async ({ page, browser }) => {
+test("enforces super-admin invitations, operational staff access, revocation and audited recovery", async ({ page, browser }) => {
   const email = `initial-staff-${randomUUID()}@example.test`;
   const secondEmail = `invited-staff-${randomUUID()}@example.test`;
   const password = "a unique staff browser passphrase";
@@ -52,7 +55,7 @@ test("enforces staff MFA, invitations, equal access, revocation and audited reco
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/mfa$/);
   const codes = await enroll(page);
-  await page.getByRole("link", { name: "Staff access", exact: true }).click();
+  await adminNavigate(page,"Staff access");
   const ownRow = page.getByRole("row").filter({ hasText: email });
   // This project's fixture may coexist with a previous project's secured admin;
   // the API-level suite independently verifies the exact last-admin invariant.
@@ -67,9 +70,10 @@ test("enforces staff MFA, invitations, equal access, revocation and audited reco
     await other.getByLabel("Account password", {exact: true}).fill(password);
     await other.getByRole("button", { name: "Accept staff invitation", exact: true }).click();
     await expect(other).toHaveURL(/\/admin\/mfa$/); await enroll(other);
-    await other.getByRole("link", { name: "Staff access", exact: true }).click();
+    await adminNavigate(other,"Staff access");
     await expect(other.getByRole("heading", { name: "Staff access." })).toBeVisible();
-    await other.getByRole("link", { name: "Audit history", exact: true }).click();
+    await expect(other.getByRole("button",{name:"Send staff invitation",exact:true})).toHaveCount(0);
+    await adminNavigate(other,"Audit history");
     await expect(other.getByRole("heading", { name: "Audit history." })).toBeVisible();
     await page.getByRole("button", { name: "Refresh staff", exact: true }).click();
     const target = page.getByRole("row").filter({ hasText: secondEmail }).getByRole("button", { name: "Deactivate staff access", exact: true });
@@ -77,20 +81,21 @@ test("enforces staff MFA, invitations, equal access, revocation and audited reco
     await expect(page.getByRole("row").filter({ hasText: secondEmail }).getByText("Deactivated", { exact: true })).toBeVisible();
     await other.goto("http://127.0.0.1:3101/admin"); await expect(other).toHaveURL(/\/admin\/login$/);
   } finally { await otherContext.close(); }
-  await page.getByRole("link", { name: "Audit history", exact: true }).click();
+  await adminNavigate(page,"Audit history");
   await expect(page.getByText("staff — deactivated", { exact: true }).first()).toBeVisible();
-  await page.getByRole("link", { name: "Verify security", exact: true }).click();
+  await adminNavigate(page,"Verify security");
   await page.getByLabel("Verification method").selectOption("recovery");
   await page.getByLabel("Recovery code", { exact: true }).fill(codes[0]!);
   await page.getByRole("button", { name: "Verify code", exact: true }).click();
   await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole("button",{name:"Sign out",exact:true}).click();await page.getByLabel("Email or username").fill(email);await page.getByLabel("Password",{exact:true}).fill(password);await page.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/admin$/);await page.getByRole("button",{name:"Forget this browser",exact:true}).click();await expect(page).toHaveURL(/\/admin\/login$/);await page.getByLabel("Email or username").fill(email);await page.getByLabel("Password",{exact:true}).fill(password);await page.getByRole("button",{name:"Sign in",exact:true}).click();await expect(page).toHaveURL(/\/admin\/mfa$/);
 });
 
 test("reviews a submitted application and completes scoped applicant corrections", async ({ page, request, browser }) => {
   const { submittedApplicant } = await import("./fixtures"); const applicant = await submittedApplicant(request);
   const email = `review-staff-${randomUUID()}@example.test`; const password = "staff review browser passphrase";
   await fixtureStaffSession(page, email, password);
-  await page.getByRole("link", {name: "Admissions", exact: true}).click();
+  await adminNavigate(page,"Admissions");
   await page.getByRole("row").filter({hasText: applicant.name}).getByRole("link", {name: "Review application"}).click();
   await expect(page.getByRole("heading", {name: applicant.name})).toBeVisible();
   await expect(page.locator(".photo-card img")).toHaveCount(4);
@@ -151,7 +156,7 @@ test("reviews a submitted application and completes scoped applicant corrections
 test("assigns admission slots, receives an RSVP and cancels the appointment", async ({page, request, browser}) => {
   const {submittedApplicant} = await import("./fixtures"); const applicant = await submittedApplicant(request);
   const email = `schedule-staff-${randomUUID()}@example.test`; const password = "scheduling staff browser passphrase"; await fixtureStaffSession(page, email, password);
-  await page.getByRole("link", {name: "Appointments", exact: true}).click();
+  await adminNavigate(page,"Appointments");
   const title = `Admission session ${randomUUID().slice(0,8)}`;
   const start = Date.now() + 30 * 24 * 60 * 60_000;
   const wat = (minutes: number) => new Date(start + (minutes + 60) * 60_000).toISOString().slice(0,16);
@@ -170,7 +175,7 @@ test("assigns admission slots, receives an RSVP and cancels the appointment", as
     const other = await context.newPage(); await other.goto("http://127.0.0.1:3101/applicant/login"); await other.getByLabel("Email or username").fill(applicant.email); await other.getByLabel("Password", {exact: true}).fill(applicant.password); await other.getByRole("button", {name: "Sign in", exact: true}).click(); await expect(other).toHaveURL(/\/applicant\/dashboard$/);
     await expect(other.getByRole("heading", {name: title})).toBeVisible(); await expect(other.getByRole("link", {name: "Private meeting link"})).toHaveAttribute("href", "https://example.test/private-admission");
     await other.getByRole("button", {name: "Confirm attendance", exact: true}).click(); await expect(other.getByText("RSVP saved", {exact: true})).toBeVisible();
-    await page.getByRole("link", {name: "Appointments", exact: true}).click(); await page.locator("li").filter({hasText: title}).getByRole("button", {name: "Edit event", exact: true}).click();
+    await adminNavigate(page,"Appointments"); await page.locator("li").filter({hasText: title}).getByRole("button", {name: "Edit event", exact: true}).click();
     await page.getByRole("checkbox", {name: "Cancel this event and all active invitations"}).check(); await page.getByRole("button", {name: "Save event changes", exact: true}).click(); await expect(page.getByText("Admission schedule updated", {exact: true})).toBeVisible();
     await other.reload(); await expect(other.getByText(/Cancelled · RSVP: confirmed/)).toBeVisible(); await expect(other.getByRole("link", {name: "Private meeting link"})).toHaveCount(0);
   } finally {await context.close();}
@@ -179,7 +184,7 @@ test("assigns admission slots, receives an RSVP and cancels the appointment", as
 test("shows verified test receipts privately to the payer and the staff reconciliation screen", async ({page, request, browser}) => {
   const {settledPayment} = await import("./fixtures"); const payer = await settledPayment(request);
   const email = `payment-staff-${randomUUID()}@example.test`; const password = "payment staff browser passphrase"; await fixtureStaffSession(page, email, password);
-  await page.getByRole("link", {name: "Payments", exact: true}).click(); await page.getByLabel("Payment filter", {exact: true}).selectOption("successful");
+  await adminNavigate(page,"Payments"); await page.getByLabel("Payment filter", {exact: true}).selectOption("successful");
   await page.locator(`a[href="/admin/payments/${payer.reference}"]`).click(); await expect(page.getByRole("heading", {name: "Test payment receipt", exact: true})).toBeVisible();
   await page.getByRole("button", {name: "Request provider reconciliation", exact: true}).click(); await expect(page.getByText("Provider verification is not configured", {exact: true})).toBeVisible();
   const ownerContext = await browser.newContext();

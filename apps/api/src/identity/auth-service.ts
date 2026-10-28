@@ -1,3 +1,4 @@
+import { createTrustedDevices } from "./trusted-device.js";
 import type { IdentityService } from "./service.js";
 import { hashToken, newToken, StaleCredentialsError } from "./service.js";
 import { hashPassword, verifyPassword } from "./password.js";
@@ -52,16 +53,17 @@ If you did not request this, you can ignore this email. This link expires and ca
       const record = await AuthToken.findOneAndUpdate({ tokenHash: hashToken(token), purpose: "password_reset", consumedAt: null, expiresAt: { $gt: new Date() } }, { $set: { consumedAt: new Date() } }, { session, returnDocument: "after" });
       if (!record) return false;
       await User.updateOne({ _id: record.userId }, { $set: { passwordHash }, $inc: { credentialsVersion: 1 } }, { session });
+      await identity.models.TrustedDevice.updateMany({userId:record.userId,revokedAt:null},{$set:{revokedAt:new Date()}},{session});
       await Session.updateMany({ userId: record.userId, revokedAt: null }, { $set: { revokedAt: new Date() } }, { session });
       return true;
     });
   }
-  async function login(identifier: string, password: string) {
+  async function login(identifier: string, password: string, deviceToken?:string) {
     const user = await User.findOne({ $or: [{ emailNormalized: identifier }, { usernameNormalized: identifier }] }).select("+passwordHash").lean();
     dummyHash ??= hashPassword("not-a-user-password-random-dummy-hash");
     const correct = await verifyPassword(user?.passwordHash ?? await dummyHash, password);
     if (!correct || !user || user.status !== "active") return null;
-    try { return await identity.issueSession(String(user._id), { expectedCredentialsVersion: user.credentialsVersion ?? 0 }); }
+    try { const trusted=await createTrustedDevices(identity).check(String(user._id),deviceToken);return await identity.issueSession(String(user._id),{expectedCredentialsVersion:user.credentialsVersion??0,...(trusted?{mfaVerified:true,mfaVerifiedAt:trusted.mfaVerifiedAt}:{})}); }
     catch (error) { if (error instanceof StaleCredentialsError) return null; throw error; }
   }
   return { register, requestToken, verifyEmail, resetPassword, login };

@@ -1,3 +1,5 @@
+import { ApplicationExport } from "../components/application-export";
+import { HeightMeasurement } from "../components/height-measurement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useBeforeUnload, useBlocker, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +14,7 @@ import { Button, Notice } from "../components/ui";
 export function meta() { return [{ title: "Your application draft — Psycocity" }, { name: "robots", content: "noindex" }]; }
 
 type FormField = { name: string; label: string; kind?: "date" | "tel" | "number" | "url" | "long" | "choice"; choices?: string[]; hint?: string };
+const placeholders:Record<string,string>={legalName:"Your full name as shown on your ID",professionalName:"The name you use professionally (optional)",phone:"e.g. 08012345678",city:"e.g. Ikeja",heightCm:"e.g. 175",bustChestCm:"e.g. 86",waistCm:"e.g. 70",hipsCm:"e.g. 94",shoeSize:"e.g. 7",introduction:"Introduce yourself, your interests and why you want to join Psycocity.",experience:"Describe shoots, shows or training. Write ‘No experience yet’ if you are starting out.",interests:"e.g. editorial, runway, commercial, beauty or fitness",availability:"Tell us your available days, times and travel limitations.",portfolioUrl:"https://your-portfolio.example (optional)",socialUrl:"https://instagram.com/your-profile (optional)",learningGoals:"What skills and confidence would you like to develop?",hybridAvailability:"Tell us when you can attend studio and online classes.",representationHistory:"Name previous agencies, or write ‘Independent / none’.",contractualRestrictions:"Describe any current agency contracts or exclusivity, or write ‘None’."};
 const sectionFields: { key: keyof DraftAnswers; title: string; fields: FormField[] }[] = [
   { key: "personal", title: "Your introduction", fields: [{ name: "legalName", label: "Legal name" }, { name: "professionalName", label: "Professional or preferred name", hint: "Optional. Use the name you work under." }, { name: "birthDate", label: "Date of birth", kind: "date", hint: "Your date of birth stays private." }, { name: "phone", label: "Phone number", kind: "tel" }] },
   { key: "location", title: "Where you’re based", fields: [{ name: "country", label: "Country", kind: "choice", choices: ["Nigeria"] }, { name: "state", label: "State or FCT", kind: "choice", choices: [...nigeriaStates] }, { name: "city", label: "City" }] },
@@ -29,7 +32,7 @@ export default function ApplicationRoute() {
 }
 function Editor({ initial }: { initial: Application }) {
   const client = useQueryClient();
-  const [answers, setAnswers] = useState<DraftAnswers>(initial.answers);
+  const [answers, setAnswers] = useState<DraftAnswers>(()=>initial.status==="draft"&&!initial.answers.measurements?.shoeSystem?{...initial.answers,measurements:{...initial.answers.measurements,shoeSystem:"UK"}}:initial.answers);
   const [track, setTrack] = useState(initial.track);
   const [version, setVersion] = useState(initial.version);
   const [saved, setSaved] = useState(draftSignature(initial.track, initial.answers));
@@ -95,14 +98,15 @@ function Editor({ initial }: { initial: Application }) {
       {section.fields.map(field => {
         const key = `${section.key}.${field.name}`; const error = errors[`answers.${key}`];
         const disabled = correction && !permitted.has(key);
-        if (field.kind === "long") return <div className="field" key={key}><label htmlFor={key}>{field.label}</label><textarea id={key} disabled={disabled} rows={5} maxLength={2000} value={valueFor(section.key, field.name)} onChange={event => change(section.key, field.name, event.target.value)} aria-invalid={Boolean(error)} aria-describedby={error ? `${key}-error` : undefined} />{error && <p id={`${key}-error`} className="field-error">{error}</p>}</div>;
+        if(field.name==="heightCm")return <HeightMeasurement key={key} value={answers.measurements?.heightCm} disabled={disabled} error={error} onChange={value=>setAnswers(current=>({...current,measurements:{...current.measurements,heightCm:value}}))}/>;
+        if (field.kind === "long") return <div className="field" key={key}><label htmlFor={key}>{field.label}</label><textarea id={key} placeholder={placeholders[field.name]} disabled={disabled} rows={5} maxLength={2000} value={valueFor(section.key, field.name)} onChange={event => change(section.key, field.name, event.target.value)} aria-invalid={Boolean(error)} aria-describedby={error ? `${key}-error` : undefined} />{error && <p id={`${key}-error`} className="field-error">{error}</p>}</div>;
         if (field.kind === "choice") return <div className="field" key={key}><label htmlFor={key}>{field.label}</label><select id={key} disabled={disabled} value={valueFor(section.key, field.name)} onChange={event => change(section.key, field.name, event.target.value)}><option value="">Select an option</option>{field.choices!.map(option => <option key={option}>{option}</option>)}</select></div>;
-        return <Field key={key} disabled={disabled} id={key} label={field.label} type={field.kind ?? "text"} value={valueFor(section.key, field.name)} onChange={event => change(section.key, field.name, event.target.value, field.kind === "number")} max={field.kind === "date" ? lagosDate() : field.kind === "number" ? 300 : undefined} min={field.kind === "number" ? 0.1 : undefined} step={field.kind === "number" ? "0.1" : undefined} hint={field.hint} error={error} />;
+        return <Field key={key} disabled={disabled} id={key} label={field.name==="shoeSize"?`Shoe size (${answers.measurements?.shoeSystem??"UK"})`:field.label} placeholder={placeholders[field.name]} type={field.kind ?? "text"} value={valueFor(section.key, field.name)} onChange={event => change(section.key, field.name, event.target.value, field.kind === "number")} max={field.kind === "date" ? lagosDate() : field.kind === "number" ? 300 : undefined} min={field.kind === "number" ? 0.1 : undefined} step={field.kind === "number" ? "0.1" : undefined} hint={field.hint??(section.key==="measurements"?field.name==="shoeSize"?"Use the selected shoe system; UK is the default.":"Enter your measurement in centimetres (cm).":field.kind==="date"?"Choose your actual date of birth.":undefined)} error={error} />;
       })}
       <div className="actions"><Button type="button" disabled={save.isPending} onClick={() => submit(false)}>Save draft</Button><Button className="button-secondary" type="submit" disabled={save.isPending}>Save and continue</Button></div>
     </form> : step === sections.length ? <div>{dirty && <Button disabled={save.isPending} onClick={() => submit(false)}>Save latest changes</Button>}<ApplicationPhotoStep applicationId={initial.id} dirty={dirty} guardianEditable={!correction || ["guardian", "personal.legalName", "personal.birthDate"].some(path => permitted.has(path))} allowedSlots={correction ? initial.correctionFields.filter(path => path.startsWith("photos.")).map(path => path.slice(7)) : undefined} /><Button className="button-secondary" onClick={() => setStep(sections.length + 1)}>Review draft</Button></div> : <section className="prose-section"><dl className="draft-review">{sections.map(group => <div key={group.key}><dt>{group.title}</dt><dd>{group.fields.map(field => <p key={field.name}><strong>{field.label}:</strong> {valueFor(group.key, field.name) || "Not provided"}</p>)}</dd></div>)}</dl><Button disabled={save.isPending} onClick={() => submit(false)}>Save draft</Button><SubmissionReview applicationId={initial.id} version={version} dirty={dirty} onIssue={path => { const index = sections.findIndex(value => value.key === path.split(".")[1]); setStep(index >= 0 ? index : sections.length); }} /></section>}
     {Object.keys(errors).length > 0 && <Notice error>Some fields need attention. Check the marked fields or revisit earlier steps.</Notice>}
     {save.isError && <Notice error>{save.error.message} Your local edits are still shown.</Notice>}
-    <div className="account-links"><Link to="/applicant/dashboard">Back to your account</Link></div>
+    <ApplicationExport id={initial.id}/><div className="account-links"><Link to="/applicant/dashboard">Back to your account</Link></div>
   </main>;
 }

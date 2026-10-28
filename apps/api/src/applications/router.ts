@@ -18,8 +18,8 @@ export function createApplicationRouter(identity: IdentityService, config: AuthC
   const { Profile, Application, Submission, Transition } = createApplicationModels(identity.models.User.db);
   router.use(requireIdentity(identity), requireRoles("applicant"), requireVerified);
   router.use((_request, response, next) => { response.set("Cache-Control", "no-store"); next(); });
-  function dto(value: { _id: unknown; track: unknown; status: unknown; version: unknown; answers: unknown; consentHold?: boolean; correctionFields?: string[]; correctionMessage?: string | null; submittedAt?: Date | null; withdrawnAt?: Date | null; updatedAt: Date }) {
-    return applicationSchema.parse({ id: String(value._id), track: value.track, status: value.status, version: value.version, answers: value.answers ?? {}, consentHold: Boolean(value.consentHold), correctionFields: value.correctionFields ?? [], correctionMessage: value.correctionMessage ?? null, submittedAt: value.submittedAt?.toISOString() ?? null, withdrawnAt: value.withdrawnAt?.toISOString() ?? null, updatedAt: value.updatedAt.toISOString() });
+  function dto(value: { _id: unknown; track: unknown; status: unknown; version: unknown; answers: unknown; consentHold?: boolean; correctionFields?: string[]; correctionMessage?: string | null; submittedAt?: Date | null; withdrawnAt?: Date | null; reapplyAfter?:Date|null; updatedAt: Date }) {
+    return applicationSchema.parse({ id: String(value._id), track: value.track, status: value.status, version: value.version, answers: value.answers ?? {}, consentHold: Boolean(value.consentHold), correctionFields: value.correctionFields ?? [], correctionMessage: value.correctionMessage ?? null, submittedAt: value.submittedAt?.toISOString() ?? null, withdrawnAt: value.withdrawnAt?.toISOString() ?? null, reapplyAfter:value.reapplyAfter?.toISOString()??null, updatedAt: value.updatedAt.toISOString() });
   }
   router.get("/", async (request, response) => {
     const query = applicationListQuerySchema.safeParse(request.query);
@@ -30,6 +30,7 @@ export function createApplicationRouter(identity: IdentityService, config: AuthC
     const page = items.slice(0, query.data.limit);
     response.json({ items: page.map(value => { const { answers: _answers, ...summary } = dto(value); return summary; }), nextCursor: hasMore ? String(page.at(-1)!._id) : null });
   });
+  router.get("/eligibility",async(_request,response)=>{const user=await identity.models.User.findById((response.locals.identity as Identity).userId).select("applicationBlockedUntil").lean();const blocked=user?.applicationBlockedUntil&&user.applicationBlockedUntil>new Date();response.json({canApply:!blocked,availableAt:blocked?user.applicationBlockedUntil!.toISOString():null});});
   router.get("/:id", async (request, response) => {
     if (!/^[0-9a-fA-F]{24}$/.test(String(request.params.id))) { sendError(response, 400, "INVALID_REQUEST", "Invalid application reference"); return; }
     const value = await Application.findOne({ _id: request.params.id, ownerId: (response.locals.identity as Identity).userId }).lean();
@@ -61,10 +62,12 @@ export function createApplicationRouter(identity: IdentityService, config: AuthC
     if (existing) { response.json(dto(existing)); return; }
     try {
       const value = await Profile.db.transaction(async session => {
+        const user=await identity.models.User.findById(ownerId).session(session);if(user?.applicationBlockedUntil&&user.applicationBlockedUntil>new Date())return null;await identity.models.User.updateOne({_id:ownerId},{$inc:{applicationRevision:1}},{session});
         const profile = await Profile.findOneAndUpdate({ userId: ownerId }, { $setOnInsert: { userId: ownerId } }, { upsert: true, returnDocument: "after", session });
         const [application] = await Application.create([{ applicantId: profile!._id, ownerId, track: input.data.track, answers: {} }], { session });
         return application!;
       });
+      if(!value){sendError(response,409,"CONFLICT","Your reapplication waiting period has not ended. Check the date in your applicant dashboard.");return;}
       response.status(201).json(dto(value));
     } catch (error) {
       if (error instanceof Error && "code" in error && error.code === 11000) { sendError(response, 409, "CONFLICT", "An active application already exists. Refresh to continue."); return; }
@@ -81,6 +84,7 @@ export function createApplicationRouter(identity: IdentityService, config: AuthC
       if (!application) return { kind: "not_found" as const };
       if (application.submittedAt && !["withdrawn", "corrections_requested"].includes(application.status)) return { kind: "success" as const, application };
       if (!["draft", "corrections_requested"].includes(application.status) || application.version !== input.data.version) return { kind: "conflict" as const };
+      const user=await identity.models.User.findById(actor.userId).session(session);if(user?.applicationBlockedUntil&&user.applicationBlockedUntil>new Date())return{kind:"invalid" as const,issues:[{path:"reapplication",message:`You may apply again from ${user.applicationBlockedUntil.toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT.`}]};await identity.models.User.updateOne({_id:actor.userId},{$inc:{applicationRevision:1}},{session});
       const assessment = await assessApplication(application, Application.db, session);
       if (!assessment.canSubmit) return { kind: "invalid" as const, issues: assessment.issues };
       const now = new Date(); const nextVersion = application.version + 1;

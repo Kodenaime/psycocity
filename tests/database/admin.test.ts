@@ -36,7 +36,7 @@ async function context() {
 let ctx: Awaited<ReturnType<typeof context>>;
 async function actor() {
   const email = `${randomUUID()}@example.test`;
-  const user = await ctx.identity.models.User.create({ emailNormalized: email, passwordHash: encoded, roles: ["admin"], staffStatus: "active", emailVerifiedAt: new Date() });
+  const user = await ctx.identity.models.User.create({ emailNormalized: email, passwordHash: encoded, isSuperAdmin:!await ctx.identity.models.User.exists({isSuperAdmin:true}), roles: ["admin"], staffStatus: "active", emailVerifiedAt: new Date() });
   const pending = await ctx.identity.issueSession(String(user._id)); const before = (await ctx.identity.authenticate(pending.token))!;
   const setup = (await ctx.service.enroll(before))!;
   const code = new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(setup.secret), algorithm: "SHA1", digits: 6, period: 30 }).generate();
@@ -112,7 +112,7 @@ describe("staff security and audit", () => {
   it("protects the last secured administrator, even when another staff member has not enrolled", async () => {
     const admin = await actor();
     await ctx.identity.models.User.create({ emailNormalized: "pending-staff@example.test", passwordHash: encoded, roles: ["admin"], emailVerifiedAt: new Date() });
-    await expect(ctx.service.deactivate(admin.identity, admin.userId)).rejects.toThrow("completed MFA");
+    await expect(ctx.service.deactivate(admin.identity, admin.userId)).rejects.toThrow("super admin");
     const other = await actor(); await ctx.service.deactivate(admin.identity, other.userId);
     expect((await request(ctx.app).get("/api/v1/admin/overview").set(other.headers)).status).toBe(401);
     const auth = createAuthService(ctx.identity, ctx.mail, origin); const login = (await auth.login(other.email, password))!;
@@ -133,4 +133,19 @@ describe("staff security and audit", () => {
     await ctx.identity.models.Session.create({ userId: admin.userId, tokenHash: hashToken(late), csrfTokenHash: hashToken(newToken()), credentialsVersion: 0, expiresAt: new Date(Date.now() + 60_000), mfaVerifiedAt: new Date() });
     expect(await ctx.identity.authenticate(late)).toBeNull();
   });
+});
+it("only the bootstrap identity is super admin and legacy promotion preserves that identity",async()=>{
+ const email="first-owner@example.test";await ctx.service.bootstrap(email);const pending=(await ctx.service.activate(await invitation(email),password))!;const before=(await ctx.identity.authenticate(pending.token))!;const setup=(await ctx.service.enroll(before))!;const verified=(await ctx.service.verifyMfa(before,"totp",new OTPAuth.TOTP({secret:OTPAuth.Secret.fromBase32(setup.secret),algorithm:"SHA1",digits:6,period:30}).generate()))!;const primary=(await ctx.identity.authenticate(verified.session.token))!;expect(primary.isSuperAdmin).toBe(true);await ctx.service.inviteStaff(primary,"normal-admin@example.test");const next=(await ctx.service.activate(await invitation("normal-admin@example.test"),password))!;const ordinary=(await ctx.identity.authenticate(next.token))!;expect(ordinary.isSuperAdmin).toBe(false);
+ await ctx.identity.models.User.updateOne({_id:primary.userId},{$unset:{isSuperAdmin:1}});const {migrateFirstSuperAdmin}=await import("../../apps/api/src/admin/super-admin.js");await migrateFirstSuperAdmin(ctx.connection);await migrateFirstSuperAdmin(ctx.connection);expect(await ctx.identity.models.User.countDocuments({isSuperAdmin:true})).toBe(1);expect((await ctx.identity.models.User.findById(primary.userId).lean())?.isSuperAdmin).toBe(true);
+});
+it("ordinary admins retain operational access but cannot invite, revoke invitations or remove admins",async()=>{
+ const primary=await actor();const ordinary=await actor();expect((await request(ctx.app).get("/api/v1/admin/overview").set(ordinary.headers)).status).toBe(200);await expect(ctx.service.inviteStaff(ordinary.identity,"not-allowed@example.test")).rejects.toThrow("super admin");await expect(ctx.service.deactivate(ordinary.identity,primary.userId)).rejects.toThrow("super admin");await ctx.service.inviteStaff(primary.identity,"pending-role@example.test");const invite=(await ctx.service.models.Invite.findOne({email:"pending-role@example.test"}).lean())!;await expect(ctx.service.revokeInvite(ordinary.identity,String(invite._id))).rejects.toThrow("super admin");
+});
+it("trusts MFA only for the same account/browser for seven days, preserves step-up and supports forgetting",async()=>{
+ const who=await actor();const device=(await ctx.identity.models.TrustedDevice.findOne({userId:who.userId}).lean())!;expect(device).toBeTruthy();
+ // Issue another opaque proof in a real transaction; raw proof is only held by this test/browser.
+ const {createTrustedDevices}=await import("../../apps/api/src/identity/trusted-device.js");const proof=(await ctx.connection.transaction(session=>createTrustedDevices(ctx.identity).issue(who.userId,session)))!;const auth=createAuthService(ctx.identity,ctx.mail,origin);expect((await auth.login(who.email,password))?.mfaRequired).toBe(true);const trusted=(await auth.login(who.email,password,proof.token))!;expect(trusted.mfaRequired).toBe(false);expect((await ctx.identity.authenticate(trusted.token))?.mfaVerified).toBe(true);expect(await auth.login(who.email,"wrong password",proof.token)).toBeNull();const other=await actor();expect((await auth.login(other.email,password,proof.token))?.mfaRequired).toBe(true);
+ await ctx.identity.models.TrustedDevice.updateOne({tokenHash:hashToken(proof.token)},{$set:{mfaVerifiedAt:new Date(Date.now()-20*60_000)}});const oldTrusted=(await auth.login(who.email,password,proof.token))!;const oldActor=(await ctx.identity.authenticate(oldTrusted.token))!;await expect(ctx.service.inviteStaff(oldActor,"fresh-code-required@example.test")).rejects.toThrow("Verify staff security");
+ await ctx.identity.models.TrustedDevice.updateOne({tokenHash:hashToken(proof.token)},{$set:{expiresAt:new Date(Date.now()-1)}});expect((await auth.login(who.email,password,proof.token))?.mfaRequired).toBe(true);
+ const newProof=(await ctx.connection.transaction(session=>createTrustedDevices(ctx.identity).issue(who.userId,session)))!;await request(ctx.app).post("/api/v1/admin/mfa/forget-device").set({...who.headers,Cookie:`${who.headers.Cookie}; psycocity_staff_device=${newProof.token}`}).send({}).expect(200);expect((await auth.login(who.email,password,newProof.token))?.mfaRequired).toBe(true);
 });

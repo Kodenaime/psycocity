@@ -2,6 +2,8 @@
 
 This file implements the blueprint in [specs.md](specs.md). It contains 40 separate prompts, mapped one-to-one to B01–B40. Paste one complete `text` block into the coding LLM at a time. The prompts are intentionally implementation instructions, not claims that features already exist.
 
+**Policy update (28 October 2026):** The “Portal workflow refinement” section of `specs.md` governs the refined portal workflows. Only the original bootstrap super admin invites/removes staff; other staff retain operational access. Browser MFA trust lasts seven days, with recent verification for roster changes. Preserve the appointment action centre, reschedule/assessment/decision flow, rejection waiting period, owner-only PDF export, unit guidance and responsive sidebar when executing these prompts.
+
 ## How to use this sequence
 
 1. Start with B01 and inspect the result before continuing. Complete dependencies before dependent prompts; do not assume previous code is correct merely because a prompt ran.
@@ -38,7 +40,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: None.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Pin Node and package manager.
@@ -75,7 +77,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B01.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Configure type/lint/build checks.
@@ -112,7 +114,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B01.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Configure replica-set MongoDB locally/test.
@@ -149,7 +151,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B01.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Define colour/type/spacing tokens.
@@ -186,7 +188,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B04.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Build homepage.
@@ -223,7 +225,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B02, B03.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add shared schemas/error codes.
@@ -260,7 +262,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B03, B06.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add user/session/token schemas and indexes.
@@ -297,7 +299,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B03, B06.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add outbox and leased worker.
@@ -334,7 +336,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B04, B07, B08.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add registration/verification.
@@ -371,7 +373,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B06, B07.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Create track-specific schemas.
@@ -408,7 +410,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B04, B09, B10.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Build personal/background/measurement steps.
@@ -445,7 +447,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B07, B10.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Authorize signed uploads for allowed purposes.
@@ -482,7 +484,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B08, B10, B11.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Capture guardian details.
@@ -519,7 +521,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B11, B12, B13.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Validate and snapshot application atomically.
@@ -556,7 +558,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B07, B08.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add secure initial-admin bootstrap.
@@ -564,7 +566,7 @@ Implement incrementally:
 3. Add audit writes and last-admin protection.
 
 Chunk-specific engineering and integration requirements:
-Implement a local/deployment one-time admin bootstrap command with secure credential handling, staff invitation flow and mandatory MFA with encrypted secrets and recovery codes. Keep staff invitations distinct from paid model invitations. All staff share operational roles but use unique identities. Add authenticated admin navigation, a real staff listing and audit viewer. Prevent last-admin removal and actor self-review in reusable policies. Test MFA enforcement, bootstrap re-use denial, audit access and public admin registration denial.
+Implement a local/deployment one-time admin bootstrap command with secure credential handling, staff invitation flow and mandatory MFA with encrypted secrets and recovery codes. Keep staff invitations distinct from paid model invitations. All staff share agency operational roles but use unique identities; only the original bootstrap super admin invites/removes staff. Add authenticated admin navigation, a real staff listing and audit viewer. Prevent last-admin removal and actor self-review in reusable policies. Test MFA enforcement, bootstrap re-use denial, audit access and public admin registration denial.
 
 Work discipline:
 - Before coding, briefly identify the files/contracts affected and how each step connects to existing behavior. If a prerequisite is absent, repair only a small prerequisite gap or report the concrete blocker; never silently bypass it.
@@ -593,7 +595,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B14, B15.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Build filtered application queue/detail.
@@ -630,7 +632,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B16.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add event/slot/invitation models.
@@ -667,7 +669,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B16.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add acceptance/rejection/waitlist actions.
@@ -704,7 +706,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B18.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add Paystack adapter/test keys.
@@ -741,7 +743,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B19.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Validate webhook signature.
@@ -778,7 +780,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B08, B20.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add scheduled pending verification.
@@ -815,7 +817,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B20, B21.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Create unique entitlement on settlement.
@@ -852,7 +854,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B09, B22.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Validate token and prove email ownership.
@@ -889,7 +891,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B23.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Build role-specific dashboard.
@@ -926,7 +928,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B12, B24.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add ordered media/cover controls.
@@ -963,7 +965,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B15, B25.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Build revision review comparison.
@@ -1000,7 +1002,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B05, B26.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add bounded directory query and filters.
@@ -1037,7 +1039,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B08, B27.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add validated persistence and spam limits.
@@ -1074,7 +1076,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B17, B24.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add represented-model event audience.
@@ -1111,7 +1113,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B15, B23.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add cohort/enrolment models.
@@ -1148,7 +1150,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B17, B30.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add delivery mode, venue and protected links.
@@ -1185,7 +1187,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B12, B31.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add cohort-scoped resource access.
@@ -1222,7 +1224,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B32.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Separate feedback/private notes.
@@ -1259,7 +1261,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B33.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add tasks/submission versions.
@@ -1296,7 +1298,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B15, B28.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Add structured draft/publish content.
@@ -1333,7 +1335,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B14, B15.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Provision separate DB/media/email/payment test services.
@@ -1370,7 +1372,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B23, B28, B29, B36; B33 for academy release.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Run both full admission journeys and negative payment cases.
@@ -1407,7 +1409,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B27, B28, B31 as applicable.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Review keyboard/forms/screen reader use.
@@ -1444,7 +1446,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B21, B36.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Restore a staging backup.
@@ -1481,7 +1483,7 @@ Context and invariant requirements:
 - Read repository agent instructions, specs.md (especially the sections relevant to this chunk), existing code, and docs/implementation-progress.md before editing. Inspect git status and preserve unrelated work. Confirm prerequisites: B35, B37, B38, B39; B34 only if extended academy launches.
 - Use React 19, TypeScript, Tailwind, TanStack Query, React Router v7 via react-router (not react-router-dom), Express/Node and MongoDB. Reuse installed compatible tools; do not re-scaffold an existing application or introduce speculative abstractions.
 - Academy eligibility is 16+ with guardian consent for ages 16–17; established/represented models are 18+. Applications are free to submit. Only accepted applicants pay: academy 5,000,000 kobo; established 3,000,000 kobo; NGN via Paystack. Verified payment precedes a single-use email-bound membership invitation. Applicant and member permissions remain separate.
-- All staff have equal operational permissions but individual audited accounts. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
+- Staff have individual audited accounts and equal agency operational permissions; only the original super admin invites/removes staff. Public model changes require staff approval. Never expose private application/member fields or images. Email is the initial notification channel; academy delivery is hybrid.
 
 Implement incrementally:
 1. Finalize business policies/assets/curriculum for released scope.

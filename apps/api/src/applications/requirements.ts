@@ -1,12 +1,14 @@
+import { createIdentityModels } from "../identity/models.js";
 import type { ClientSession, Connection } from "mongoose";
 import { applicationPrivacyVersion, applicationTermsVersion, finalApplicationSchema } from "@psycocity/validation";
 import { guardianStatus, subjectDetails, type ConsentSubject } from "../guardian/service.js";
 import { createGuardianModel } from "../guardian/models.js";
 import { createMediaModel } from "../media/models.js";
-export async function assessApplication(application: ConsentSubject & { status: string }, connection: Connection, session?: ClientSession) {
+export async function assessApplication(application: ConsentSubject & { status: string; ownerId?:unknown }, connection: Connection, session?: ClientSession) {
   const parsed = finalApplicationSchema.safeParse({ track: application.track, answers: application.answers });
   const issues = parsed.success ? [] : parsed.error.issues.map(issue => ({ path: issue.path.join("."), message: issue.message }));
   if (!["draft", "corrections_requested"].includes(application.status)) issues.push({ path: "status", message: "This application is not an editable draft" });
+  if(application.ownerId){const user=await createIdentityModels(connection).User.findById(application.ownerId).select("applicationBlockedUntil").session(session??null).lean();if(user?.applicationBlockedUntil&&user.applicationBlockedUntil>new Date())issues.push({path:"reapplication",message:`You may apply again from ${user.applicationBlockedUntil.toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT.`});}
   const consent = await guardianStatus(application, connection, session);
   if (!consent.canUpload) issues.push({ path: "guardian", message: "Complete eligible personal details and any required guardian consent; resolve any consent hold" });
   const guardianRecord = consent.required && consent.canUpload ? await createGuardianModel(connection).findOne({ applicationId: application._id, status: "consented", subjectHash: subjectDetails(application).hash }).sort({ createdAt: -1, _id: -1 }).select("_id").session(session ?? null).lean() : null;

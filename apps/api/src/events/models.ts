@@ -16,6 +16,7 @@ const invitationSchema = new Schema({
   startsAt: { type: Date, required: true }, endsAt: { type: Date, required: true },
   rsvp: { type: String, enum: ["pending", "confirmed", "declined"], default: "pending", required: true },
   attendance: { type: String, enum: ["unrecorded", "present", "absent", "late", "excused"], default: "unrecorded", required: true },
+  rescheduleStatus:{type:String,enum:["none","pending","resolved"],default:"none"},rescheduleReason:{type:String,default:"",maxlength:1000},suggestedStartsAt:Date,suggestedEndsAt:Date,
   outcome: { type: String, maxlength: 2000, default: "" },
   status: { type: String, enum: ["active", "cancelled"], default: "active", required: true },
   version: { type: Number, default: 0, required: true }, eventVersion: { type: Number, default: 0, required: true },

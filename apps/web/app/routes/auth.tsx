@@ -8,7 +8,7 @@ import { apiGet, apiPost } from "../lib/api";
 export function meta() { return [{ title: "Account access — Psycocity" }, { name: "robots", content: "noindex" }]; }
 const modes = {
   "/member/login": {heading: "Member access.", description: "Member access is invitation-only. Sign in with your email or member username after separate membership registration.", action: "Sign in", endpoint: "login", schema: loginSchema},
-  "/admin/login": { heading: "Staff access.", description: "Sign in, then verify with your authenticator. Staff access is invitation-only.", action: "Sign in", endpoint: "login", schema: loginSchema },
+  "/admin/login": { heading: "Staff access.", description: "Sign in with email and password. A new browser requires an authenticator code; verified browsers are trusted for seven days. Staff access is invitation-only.", action: "Sign in", endpoint: "login", schema: loginSchema },
   "/applicant/register": { heading: "Your next chapter.", description: "Create your applicant account. Application submission is free; member activation is separate.", action: "Create applicant account", endpoint: "register", schema: registerSchema },
   "/applicant/login": { heading: "Welcome back.", description: "Sign in to your applicant account.", action: "Sign in", endpoint: "login", schema: loginSchema },
   "/applicant/forgot-password": { heading: "A fresh start.", description: "Request a private password reset link.", action: "Send reset link", endpoint: "forgot-password", schema: emailRequestSchema },
@@ -25,7 +25,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const capabilities = useQuery({ queryKey: ["auth", "capabilities"], queryFn: ({ signal }) => apiGet("/auth/capabilities", authCapabilitiesSchema, signal) });
   const mutation = useMutation({ mutationFn: (body: unknown) => apiPost(`/auth/${mode.endpoint}`, body, mode.endpoint === "login" ? loginResponseSchema : messageSchema), onSuccess: async data => {
-    if (mode.endpoint === "login") { client.clear(); await navigate("mfaRequired" in data && data.mfaRequired ? "/admin/mfa" : pathname === "/member/login" ? "/member/dashboard" : "/applicant/dashboard"); }
+    if (mode.endpoint === "login") { client.clear(); await navigate("mfaRequired" in data && data.mfaRequired ? "/admin/mfa" : pathname === "/member/login" ? "/member/dashboard" : pathname === "/admin/login" ? "/admin" : "/applicant/dashboard"); }
     if (mode.endpoint === "reset-password" || mode.endpoint === "verify-email") await navigate(pathname, { replace: true });
   } });
   const isToken = mode.endpoint === "verify-email" || mode.endpoint === "reset-password";

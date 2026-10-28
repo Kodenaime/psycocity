@@ -6,9 +6,9 @@ export class StaleCredentialsError extends Error {}
 export const sessionCookieName = "psycocity_session";
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 export const newToken = () => randomBytes(32).toString("hex");
-export type Identity = { userId: string; email: string; roles: string[]; verified: boolean; sessionId: string; csrfTokenHash: string; mfaEnabled: boolean; mfaVerified: boolean };
+export type Identity = { userId: string; email: string; roles: string[]; verified: boolean; sessionId: string; csrfTokenHash: string; mfaEnabled: boolean; mfaVerified: boolean; isSuperAdmin?: boolean };
 export function createIdentityService(models: IdentityModels) {
-  async function issueSession(userId: string, options: { session?: ClientSession; mfaVerified?: boolean; expectedCredentialsVersion?: number } = {}) {
+  async function issueSession(userId: string, options: { session?: ClientSession; mfaVerified?: boolean; mfaVerifiedAt?:Date; expectedCredentialsVersion?: number } = {}) {
     const user = await models.User.findById(userId).session(options.session ?? null).lean();
     if (!user || user.status !== "active") throw new Error("Session account is unavailable");
     if (options.expectedCredentialsVersion !== undefined && options.expectedCredentialsVersion !== (user.credentialsVersion ?? 0)) throw new StaleCredentialsError("Account credentials changed");
@@ -18,7 +18,7 @@ export function createIdentityService(models: IdentityModels) {
     const token = newToken();
     const csrfToken = newToken();
     const expiresAt = new Date(Date.now() + (mfaRequired ? 5 * 60_000 : 7 * 24 * 60 * 60 * 1000));
-    await models.Session.create([{ userId, tokenHash: hashToken(token), csrfTokenHash: hashToken(csrfToken), expiresAt, credentialsVersion, ...(options.mfaVerified ? { mfaVerifiedAt: new Date() } : {}) }], { session: options.session });
+    await models.Session.create([{ userId, tokenHash: hashToken(token), csrfTokenHash: hashToken(csrfToken), expiresAt, credentialsVersion, ...(options.mfaVerified ? { mfaVerifiedAt: options.mfaVerifiedAt??new Date() } : {}) }], { session: options.session });
     return { token, csrfToken, expiresAt, mfaRequired, setupRequired: activeAdmin && !user.mfaEnabledAt };
   }
   async function authenticate(token: string | undefined): Promise<Identity | null> {
@@ -28,7 +28,7 @@ export function createIdentityService(models: IdentityModels) {
     const user = await models.User.findById(session.userId).lean();
     if (!user || user.status !== "active" || (session.credentialsVersion ?? 0) !== (user.credentialsVersion ?? 0)) return null;
     const roles = user.roles.filter(role => role !== "admin" || user.staffStatus !== "deactivated");
-    return { userId: String(user._id), email: user.emailNormalized, roles, mfaEnabled: Boolean(user.mfaEnabledAt), mfaVerified: !roles.includes("admin") || Boolean(user.mfaEnabledAt && session.mfaVerifiedAt), verified: Boolean(user.emailVerifiedAt), sessionId: String(session._id), csrfTokenHash: session.csrfTokenHash };
+    return { isSuperAdmin:Boolean(user.isSuperAdmin), userId: String(user._id), email: user.emailNormalized, roles, mfaEnabled: Boolean(user.mfaEnabledAt), mfaVerified: !roles.includes("admin") || Boolean(user.mfaEnabledAt && session.mfaVerifiedAt && session.mfaVerifiedAt.getTime()>Date.now()-7*24*60*60_000), verified: Boolean(user.emailVerifiedAt), sessionId: String(session._id), csrfTokenHash: session.csrfTokenHash };
   }
   async function revokeOwnedSession(actorId: string, sessionId: string) {
     if (!Types.ObjectId.isValid(actorId) || !Types.ObjectId.isValid(sessionId)) return false;
