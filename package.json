@@ -36,7 +36,9 @@
     "media:cleanup": "npm run media:cleanup -w @psycocity/api",
     "admin:bootstrap": "npm run admin:bootstrap -w @psycocity/api --",
     "worker:payments": "npm run worker:payments -w @psycocity/api",
-    "test:recovery": "node scripts/recovery.mjs"
+    "test:recovery": "node scripts/recovery.mjs",
+    "demo:seed": "npm run build -w @psycocity/validation && npm run build -w @psycocity/api && node --env-file-if-exists=.env scripts/seed-demo.mjs",
+    "demo:smoke": "npm run build -w @psycocity/validation && npm run build -w @psycocity/api && node scripts/demo-smoke.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

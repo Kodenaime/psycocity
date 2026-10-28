@@ -64,7 +64,7 @@ test("enforces staff MFA, invitations, equal access, revocation and audited reco
   const otherContext = await browser.newContext();
   try {
     const other = await otherContext.newPage(); await other.goto(invitation);
-    await other.getByLabel("Account password").fill(password);
+    await other.getByLabel("Account password", {exact: true}).fill(password);
     await other.getByRole("button", { name: "Accept staff invitation", exact: true }).click();
     await expect(other).toHaveURL(/\/admin\/mfa$/); await enroll(other);
     await other.getByRole("link", { name: "Staff access", exact: true }).click();

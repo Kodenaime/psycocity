@@ -35,6 +35,8 @@ jobs:
         run: npm run check
       - name: Verify isolated logical backup recovery
         run: npm run test:recovery
+      - name: Verify isolated local demo accounts and safeguards
+        run: npm run demo:smoke
       - name: Preserve verification evidence
         if: always()
         uses: actions/upload-artifact@v4

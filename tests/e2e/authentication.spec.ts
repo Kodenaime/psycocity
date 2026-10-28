@@ -65,7 +65,7 @@ test("resets a password through delivered mail and rejects the old session", asy
   await page.getByRole("button", { name: "Send reset link" }).click();
   await expect(page.getByRole("status")).toContainText("private email");
   await page.goto(await mailLink(email, "Reset"));
-  await page.getByLabel("New password").fill("replacement browser test passphrase");
+  await page.getByLabel("New password", {exact: true}).fill("replacement browser test passphrase");
   await page.getByRole("button", { name: "Update password" }).click();
   await expect(page.getByRole("status")).toContainText("Password updated");
   const revoked = await request.get("/api/v1/auth/me", { headers: { Cookie: `psycocity_session=${session.value}` } });

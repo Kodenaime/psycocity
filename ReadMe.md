@@ -257,3 +257,9 @@ Course files and assignment submissions currently support private UTF-8 text fil
 - [Live-testing inputs and checklist](docs/live-testing-checklist.md): keys, secrets, agency information and required end-to-end staging tests. Enter secrets through ignored files/secret management, never chat or Git.
 
 `NODE_ENV=production` can run test-mode Paystack only with explicit `DEPLOYMENT_STAGE=staging` and `PAYSTACK_ENVIRONMENT=test`; deployment preflight requires TLS MongoDB, HTTPS origin, private Cloudinary, Resend and the stable encryption key. Live keys are rejected. No remote resources have been provisioned or deployed by these changes.
+
+### Local verification emails, sample accounts and password visibility
+
+See [the Windows local-testing guide](docs/local-testing.md) to read development emails under `.local/mail`, create isolated applicant/student/model/admin demo accounts, set up staff MFA and understand `OUTBOX_ENCRYPTION_KEY` / `TRUST_PROXY_CIDRS`. `npm run demo:seed` is explicitly restricted to a separate local demo database with local-only adapters and simulated payments. It is never a production payment/role bypass. `npm run demo:smoke` verifies those guards and actual role-isolated logins against a uniquely owned test database.
+
+All shared password fields now have an accessible eye toggle, including applicant/member/admin login, registration, password reset, staff activation and member activation. Revealing a value does not submit the form or change its contents.

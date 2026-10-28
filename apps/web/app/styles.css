@@ -203,3 +203,10 @@ label > textarea { min-height: 7rem; resize: vertical; }
   .certificate[data-print] { position: absolute; inset: 0; margin: 0; padding: 2cm; border: 0; }
   .certificate[data-print] button { display: none; }
 }
+
+.password-control { position: relative; }
+.field .password-control input { padding-right: 3.75rem; }
+.password-toggle { position: absolute; right: .2rem; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: #191919; cursor: pointer; }
+.password-toggle:hover { background: #eeeadf; }
+.password-toggle:focus-visible { outline: 2px solid #191919; outline-offset: -3px; }
+.password-toggle:disabled { cursor: default; opacity: .5; }
