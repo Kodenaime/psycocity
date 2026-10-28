@@ -9,6 +9,7 @@ import { createIdentityService } from "../../apps/api/src/identity/service.js";
 import { hashPassword } from "../../apps/api/src/identity/password.js";
 import { createOutboxModel } from "../../apps/api/src/mail/models.js";
 import { createOutbox } from "../../apps/api/src/mail/outbox.js";
+import { decryptPayload } from "../../apps/api/src/mail/crypto.js";
 import { localMailSender, type Mail } from "../../apps/api/src/mail/delivery.js";
 import { createAuthService } from "../../apps/api/src/identity/auth-service.js";
 import { createRateLimitModel } from "../../apps/api/src/identity/rate-limit.js";
@@ -23,7 +24,8 @@ const connection = database.connection.useDb(`auth_${randomUUID().replaceAll("-"
 const models = createIdentityModels(connection);
 const identity = createIdentityService(models);
 const model = createOutboxModel(connection);
-const outbox = createOutbox(model, randomBytes(32));
+const outboxKey = randomBytes(32);
+const outbox = createOutbox(model, outboxKey);
 let directory: string;
 const sender = async (mail: Mail, key: string) => localMailSender("test", directory)(mail, key);
 const mail = { ...outbox, model, sender };
@@ -128,4 +130,10 @@ describe("integrated applicant authentication", () => {
     for (let i = 0; i < 12; i++) response = await post("resend-verification", { email: "missing@example.test" });
     expect(response?.status).toBe(429); expect(response?.body.error.code).toBe("RATE_LIMITED"); expect(response?.headers["retry-after"]).toBe("900");
   });
+});
+
+it("scrubs superseded verification jobs so only the latest queued link can be delivered",async()=>{
+ const email="resend-order@example.test";await post("register",{email,password}).expect(202);const user=(await models.User.findOne({emailNormalized:email}).lean())!;const old=(await models.AuthToken.findOne({userId:user._id,purpose:"email_verification"}).lean())!;const oldJob=(await model.findOne({dedupeKey:`email_verification:${old._id}`}).select("+encryptedPayload").lean())!;const oldMessage=decryptPayload(oldJob.encryptedPayload!,outboxKey) as Mail;const oldToken=new URL(oldMessage.text.match(/https?:\/\/\S+/)![0]).searchParams.get("token");await createAuthService(identity,mail,origin).requestToken(email,"email_verification");
+ const superseded=(await model.findById(oldJob._id).select("+encryptedPayload").lean())!;expect(superseded.state).toBe("failed");expect(superseded.lastErrorCode).toBe("TOKEN_SUPERSEDED");expect(superseded.encryptedPayload).toBeUndefined();const link=await deliveredLink(email,"Verify");await post("verify-email",{token:oldToken}).expect(400);await post("verify-email",{token:link.searchParams.get("token")}).expect(200);
+ const current=(await model.findOne({dedupeKey:{$ne:oldJob.dedupeKey},state:"delivered"}).sort({_id:-1}).lean())!;expect(current.payloadExpiresAt).toBeInstanceOf(Date);
 });

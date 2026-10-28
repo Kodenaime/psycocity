@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { encryptPayload, decryptPayload, loadOutboxKey } from "../../apps/api/src/mail/crypto.js";
-import { localMailSender } from "../../apps/api/src/mail/delivery.js";
+import { localMailSender, resendMailSender, MailDeliveryError } from "../../apps/api/src/mail/delivery.js";
 
 describe("email protection boundaries", () => {
   it("authenticates ciphertext and rejects wrong keys", () => {
@@ -26,3 +26,6 @@ describe("email protection boundaries", () => {
     await expect(loadOutboxKey("production", "invalid")).rejects.toThrow("32 random bytes");
   });
 });
+
+afterEach(()=>vi.unstubAllGlobals());
+it.each([[401,"RESEND_AUTH_REJECTED"],[403,"RESEND_SENDER_OR_PERMISSION_REJECTED"],[422,"RESEND_REQUEST_REJECTED"],[429,"RESEND_RATE_LIMITED"],[503,"RESEND_UNAVAILABLE"]])("reports safe Resend status for HTTP %s without exposing provider bodies",async(status,code)=>{vi.stubGlobal("fetch",vi.fn().mockResolvedValue(new Response("private-provider-body-token-fixture",{status:Number(status)})));const sender=resendMailSender("private-key-fixture","Psycocity <sender@example.test>");try{await sender({to:"recipient@example.test",subject:"Fixture",text:"private-link-fixture"},"fixture");expect.fail("must reject provider error");}catch(error){expect(error).toBeInstanceOf(MailDeliveryError);expect((error as MailDeliveryError).code).toBe(code);expect(String(error)).not.toContain("private-provider");expect(String(error)).not.toContain("private-key");}});

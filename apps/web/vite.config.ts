@@ -3,7 +3,13 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter()],
+  plugins: [
+    {name:"quiet-chrome-devtools-probe",configureServer(server){server.middlewares.use((request,response,next)=>{
+      if (["GET","HEAD"].includes(request.method ?? "") && request.url?.split("?")[0] === "/.well-known/appspecific/com.chrome.devtools.json") {response.statusCode=404;response.setHeader("Cache-Control","no-store");response.end();return;}
+      next();
+    });}},
+    tailwindcss(), reactRouter()
+  ],
   server: {
     port: 5173,
     strictPort: true,

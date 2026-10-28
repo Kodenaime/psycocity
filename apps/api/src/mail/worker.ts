@@ -18,7 +18,7 @@ try {
   if (!mail) throw new Error("Email transport is disabled");
   const enquiries = createEnquiryNotifications(createIdentityService(createIdentityModels(database.connection)), mail, readAuthConfig(process.env, config.mode).origin);
   const academy = createAcademyNotifications(createIdentityService(createIdentityModels(database.connection)), mail, readAuthConfig(process.env, config.mode).origin);
-  console.log("Email worker started");
+  console.log(`Email worker started; transport=${process.env.EMAIL_TRANSPORT ?? "local"}`);
   while (!stopping) {
     const delivered = await mail.runOnce(mail.sender); const notified = await enquiries.runOnce(); const scheduled = await academy.runOnce(); if (!delivered && !notified && !scheduled) await new Promise(resolve => setTimeout(resolve, 500));
   }

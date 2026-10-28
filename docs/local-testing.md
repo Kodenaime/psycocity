@@ -103,3 +103,37 @@ Upload static JPEG/PNG/WebP sample images at least 200×200 pixels and at most 1
 `OUTBOX_ENCRYPTION_KEY` is a **server encryption master key**, not a Paystack key or login password. It protects queued transactional email and, with a derived key, staff authenticator secrets. In local development, leave it blank: the app generates and reuses `.local/outbox-key`. Keep that file. For deployment, generate one stable, random 32-byte key encoded in base64 and back it up separately. Do not replace/delete it while encrypted mail/MFA records exist; doing so can make them unreadable. Never expose it to the browser or Git.
 
 `TRUST_PROXY_CIDRS` lists the **trusted reverse-proxy IP addresses or network ranges** allowed to supply forwarded client-IP information. It matters when a deployed app sits behind a load balancer/proxy and rate limits need the actual client address. For your direct local setup, leave it blank. Set it in deployment only after verifying the actual proxy peers and blocking direct public access to the API. It is network configuration, not a secret key. Do not use `true` or `0.0.0.0/0`.
+
+## Missing email, invalid links or API restarts
+
+After switching from local MongoDB to Atlas, old `.local/mail` links belong to the previous database and cannot verify an account in the new one. Resending also invalidates older tokens. Keep the intended `MONGODB_URI` consistent across the API and mail worker, then request a fresh link once and open only that message. If the registration request was interrupted, register with the same email again (existing accounts are not overwritten) before requesting verification. If the account is already verified, sign in instead.
+
+For real delivery use `EMAIL_TRANSPORT=resend`, a valid `RESEND_API_KEY` and `EMAIL_FROM` permitted by your verified Resend domain. `.local/mail` contains old local-delivery files; their existence does not prove the active Resend worker is delivering anything. Resend's test sender can restrict recipients to the account owner's email. Use a real mailbox you control, not a `.test` sample address, for external delivery checks.
+
+After changing `.env` or pulling this fix, stop the entire root development command with Ctrl+C, run `git pull` and `npm ci`, then restart `npm run dev`. Both API and worker must reload the same settings/key. Do not run `npm ci`/dependency updates concurrently with the running dev server. API development now watches only source/shared compiled contracts, excluding dependency-directory changes. The worker prints its active transport at startup. Chrome's optional DevTools metadata probe is answered quietly with 404 and is unrelated to mail.
+
+In a second PowerShell terminal, inspect safe delivery status:
+
+```powershell
+npm run mail:status -- --email YOUR-REGISTERED-EMAIL
+```
+
+For a compiled deployment image, the equivalent command is `node apps/api/dist/mail/status.js --email YOUR-REGISTERED-EMAIL` with its existing environment.
+
+This reads the current configuration/database without sending email or printing your URI credentials, API key, recipient list, message bodies or private links. It shows transport, database name, origin, key/sender presence, whether the requested account exists/is verified, active verification-token count and recent queue states. You can share this command's output for troubleshooting; do not share your `.env` or verification link.
+
+| Result/code | Action |
+| --- | --- |
+| Transport `local` | Emails go to `.local/mail`; select `resend` and restart everything for actual inbox delivery |
+| Account not found | Confirm the selected database, then register there; resend intentionally does not disclose unknown accounts through the public UI |
+| Pending with zero attempts | Confirm the root dev command's mail worker is running and connected to the same database |
+| `RESEND_AUTH_REJECTED` | Check the configured Resend key and its permissions |
+| `RESEND_SENDER_OR_PERMISSION_REJECTED` | Check sender/domain verification, test-recipient restrictions and key permissions in Resend |
+| `RESEND_REQUEST_REJECTED` | Inspect Resend's dashboard for sender/recipient or request validation details |
+| `RESEND_RATE_LIMITED` / `RESEND_UNAVAILABLE` | Check Resend/network status; delivery retries are bounded |
+| `PAYLOAD_UNREADABLE` | Restore the original encryption key and restart both processes; do not generate a replacement to bypass this error |
+| `TOKEN_SUPERSEDED` / `PAYLOAD_EXPIRED` | Expected cancellation/expiry; request and use a new link rather than retrying an obsolete message |
+| `DELIVERY_FAILED` | Check network/worker configuration and delivery logs; raw provider error bodies are deliberately not printed |
+| Delivered | Provider handoff completed; check Resend delivery/bounce logs and spam folder to establish actual inbox delivery |
+
+Auth email jobs now expire with their tokens and queued superseded verification/reset messages are cancelled, preventing old queued links from being delivered after a replacement request. A message already accepted by an email provider cannot be recalled; always use the newest link from the active database. Resend-verification requests are limited to three per address per hour; repeated requests beyond that do not create another token, so avoid repeatedly clicking resend.

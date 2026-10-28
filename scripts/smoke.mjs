@@ -43,6 +43,12 @@ try {
   const html = await home.text();
   assert.match(html, /A new stage/);
   assert.match(html, /Psycocity — Agency &amp; Academy|Psycocity — Agency & Academy/);
+  if(mode === 'development') {
+    const probe=await fetch(`${origin}/.well-known/appspecific/com.chrome.devtools.json`);
+    assert.equal(probe.status,404);
+    assert.equal(await probe.text(),'');
+    assert.ok(!logs.includes('No route matches URL "/.well-known/appspecific/com.chrome.devtools.json"'));
+  }
   const statusPage = await fetch(`${origin}/status`);
   assert.match(await statusPage.text(), /Checking API connection/);
   const asset = mode === 'production'

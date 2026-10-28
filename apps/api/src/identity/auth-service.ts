@@ -9,6 +9,8 @@ export function createAuthService(identity: IdentityService, mail: MailRuntime, 
   async function issueToken(userId: string, email: string, purpose: "email_verification" | "password_reset", session: import("mongoose").ClientSession) {
     if (!mail) throw new Error("Email unavailable");
     const token = newToken();
+    const older = await AuthToken.find({userId,purpose,consumedAt:null}).select("_id").session(session).lean();
+    if (older.length) await mail.model.updateMany({dedupeKey:{$in:older.map(record=>`${purpose}:${record._id}`)},state:{$ne:"delivered"}},{$set:{state:"failed",lastErrorCode:"TOKEN_SUPERSEDED"},$unset:{encryptedPayload:1,claimId:1,leaseUntil:1}},{session});
     await AuthToken.deleteMany({ userId, purpose, consumedAt: null }).session(session);
     const [record] = await AuthToken.create([{ userId, purpose, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + (purpose === "email_verification" ? 24 : 1) * 60 * 60 * 1000) }], { session });
     const path = purpose === "email_verification" ? "/applicant/verify-email" : "/applicant/reset-password";
@@ -16,7 +18,7 @@ export function createAuthService(identity: IdentityService, mail: MailRuntime, 
     await mail.enqueue({ to: email, subject: purpose === "email_verification" ? "Verify your Psycocity email" : "Reset your Psycocity password", text: `${purpose === "email_verification" ? "Confirm your email address" : "Choose a new password"} using this private link:
 ${url.href}
 
-If you did not request this, you can ignore this email. This link expires and can be used only once.` }, `${purpose}:${record!._id}`, session);
+If you did not request this, you can ignore this email. This link expires and can be used only once.` }, `${purpose}:${record!._id}`, session, record!.expiresAt);
   }
   async function register(email: string, password: string) {
     const passwordHash = await hashPassword(password);
